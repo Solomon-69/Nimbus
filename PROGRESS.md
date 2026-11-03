@@ -40,3 +40,8 @@ Brief: `Apps/WEATHER-APP-PROMPT.md`. Folder: `Apps/Weather`.
 - Preview server: `cd Weather && python3 -m http.server 8791`, open `http://127.0.0.1:8791/web/index.html`. Seed test places with localStorage key `weather.state.v1` (see engine.js).
 - Playwright can't open file://; port 8765 is used by another process.
 - Disk: 8 GB free; build in /private/tmp.
+
+## 3 Nov, evening
+- Fixes from Solomon's recording: Places temps now line up (hidden slot where the cross would be), search results show above the saved list, Settings and Places slide in like Ludus pages (24 px spring, home page slides back), no overshoot so the back button is never cut off, panel outline thinner, "Now" card has a 12-hour temperature line instead of empty space.
+- Windows: private repo Solomon-69/Nimbus, GitHub Windows runner run passes every check (live data, tray icon, light/dark, F/mph, places, Esc, location, restart, clean quit). Screenshots in QA/proof/windows.
+- Open: Windows location falls back to an IP lookup (ipapi.co) and a name lookup (bigdatacloud), which differs from the "stays on this device" wording. Publishing (public repo, page, Mac-Apps card, release) waits for Solomon's go.
