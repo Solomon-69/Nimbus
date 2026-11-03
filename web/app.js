@@ -197,6 +197,10 @@
   /* Opening the panel: the panel itself springs open (native), so the content is simply there. No staggered build-up. */
   function replayEnter() {
     const hs = $('#hours'); if (hs) hs.scrollLeft = 0; scroll.scrollTop = 0;
+    if (reduceMotion() || !app.animate) return;
+    // Same entrance as the other menu bar apps: the content settles in from a hair smaller, anchored at the top, with a light spring.
+    app.animate([{ transform: 'scale(0.965)' }, { transform: 'scale(1)' }], { duration: 420, easing: 'cubic-bezier(0.34, 1.2, 0.5, 1)' });
+    app.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
   }
 
   function bindWelcome() {
