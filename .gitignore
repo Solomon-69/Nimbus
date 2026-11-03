@@ -1,0 +1,8 @@
+.signing
+assets/*.iconset
+.playwright-mcp/
+QA/proof/
+.base-ast/
+.DS_Store
+windows/bin/
+windows/obj/

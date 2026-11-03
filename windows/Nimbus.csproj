@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Nimbus</RootNamespace>
+    <AssemblyName>Nimbus</AssemblyName>
+    <ApplicationIcon>assets\Nimbus.ico</ApplicationIcon>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationVisualStyles>true</ApplicationVisualStyles>
+
+    <Product>Nimbus</Product>
+    <Description>Weather in your tray</Description>
+    <Company>Solomon</Company>
+    <Copyright>Copyright (c) 2026 Solomon</Copyright>
+    <Version>0.2.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <!-- One self-contained Nimbus.exe (no .NET install needed); the WebView2 loader DLL rides inside it. -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3912.50" />
+  </ItemGroup>
+
+  <!-- The shared screens (../web) sit next to Nimbus.exe in a "web" folder, loose, not bundled.
+       The Mac-only icon, the test helper and the proof screenshots stay out. -->
+  <ItemGroup>
+    <Content Include="..\web\**\*"
+             Exclude="..\web\**\.DS_Store;..\web\proof\**;..\web\wxtest.swift;..\web\*.icns"
+             Link="web\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest"
+             ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+</Project>
