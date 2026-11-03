@@ -194,10 +194,8 @@
     shown = { id: p.id, temp: t };
   }
 
+  /* Opening the panel: the panel itself springs open (native), so the content is simply there. No staggered build-up. */
   function replayEnter() {
-    main.classList.remove('enter'); void main.offsetWidth; main.classList.add('enter');
-    const p = E.selectedPlace(), m = p && S.models[p.id];
-    if (m) { const t = C.tempNum(m.now.temp, S.settings.unit); const big = $('#big'); if (big) roll(big, t - (t >= 0 ? 8 : -8), t, 800); }
     const hs = $('#hours'); if (hs) hs.scrollLeft = 0; scroll.scrollTop = 0;
   }
 

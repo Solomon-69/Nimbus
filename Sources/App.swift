@@ -346,14 +346,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     private func springPanel(opening: Bool) {
         guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
         let w = panelSize.width, h = panelSize.height
-        let s0: CGFloat = opening ? 0.86 : 0.95
+        let s0: CGFloat = opening ? 0.93 : 0.96
         var small = CATransform3DMakeTranslation((arrowX - w / 2) * (1 - s0), (h / 2) * (1 - s0), 0)
         small = CATransform3DScale(small, s0, s0, 1)
         let spring = CASpringAnimation(keyPath: "transform")
         if opening {
             spring.fromValue = small
             spring.toValue = CATransform3DIdentity
-            spring.mass = 1; spring.stiffness = 340; spring.damping = 19
+            spring.mass = 1; spring.stiffness = 460; spring.damping = 27
             spring.duration = spring.settlingDuration
         } else {
             spring.fromValue = CATransform3DIdentity
@@ -387,7 +387,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         panel.makeKey()
         panel.makeFirstResponder(webView)
         NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.14
+            ctx.duration = 0.1
             ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
             panel.animator().alphaValue = 1
         }
