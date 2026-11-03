@@ -67,7 +67,7 @@ internal sealed class TrayContext : ApplicationContext
         tray.BalloonTipClicked += (_, _) => popup.ShowPopup(TrayCenter());
         theme.TaskbarChanged += () =>
         {
-            if (popup.IsHandleCreated) popup.BeginInvoke((MethodInvoker)(() => DrawTrayIcon(force: true)));
+            if (popup.IsHandleCreated) popup.BeginInvoke((System.Windows.Forms.MethodInvoker)(() => DrawTrayIcon(force: true)));
         };
 
         // Once a minute the page decides whether the forecast is due (5 minutes open, 15 closed).
