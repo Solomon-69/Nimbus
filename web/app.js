@@ -278,7 +278,7 @@
         setRow('login', 'Open at login', 'Start Nimbus when you sign in', switchEl(!!s.login, (v) => E.setSettings({ login: v }), 'Open at login')),
         setRow('power', 'Quit Nimbus', 'Close it completely', (() => { const b = document.createElement('button'); b.className = 'btn soft'; b.style.height = '30px'; b.style.padding = '0 12px'; b.textContent = 'Quit'; b.onclick = () => E.quit(); return b; })(), 'mute'));
     } else {
-      sh.innerHTML = sheetHead('Places') + `<div class="scroll"><label class="search"><svg viewBox="0 0 24 24">${IC.search.slice(IC.search.indexOf('>') + 1, -6)}</svg><input id="q" placeholder="Search for a city" autocomplete="off" spellcheck="false"></label><div id="res"></div><div id="plist"></div></div><div class="ftr" id="pf"></div>`;
+      sh.innerHTML = sheetHead('Places') + `<div class="scroll"><label class="search"><svg viewBox="0 0 24 24">${IC.search.slice(IC.search.indexOf('>') + 1, -6)}</svg><input id="q" placeholder="Search for a city" autocomplete="off" spellcheck="false"></label><div id="res"></div><div id="plist"></div></div>`;
       renderPlaces();
       let timer = 0, seq = 0;
       $('#q', sh).addEventListener('input', (e) => {
@@ -313,7 +313,6 @@
     list.querySelectorAll('[data-sel]').forEach((b) => b.onclick = () => { E.select(b.dataset.sel); closeSheet(); });
     list.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => E.removePlace(b.dataset.del));
     const h = $('#p-here', list); if (h) h.onclick = () => { E.locate(); renderPlaces(); };
-    $('#pf', sh).textContent = S.places.length + ' of 8 places';
   }
 
   /* ---------- engine events ---------- */

@@ -3,7 +3,7 @@
 (function () {
   const C = window.WxCore;
   const KEY = 'weather.state.v1';
-  const OPEN_EVERY = 5 * 60e3, CLOSED_EVERY = 15 * 60e3, RETRY_AFTER = 60e3, STALE_ON_OPEN = 20e3, MAX_PLACES = 8;
+  const OPEN_EVERY = 5 * 60e3, CLOSED_EVERY = 15 * 60e3, RETRY_AFTER = 60e3, STALE_ON_OPEN = 20e3, FAR_STALE = 30 * 60e3, CHUNK = 6;
 
   const host = (() => {
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.wx) return { kind: 'mac', post: (m) => window.webkit.messageHandlers.wx.postMessage(m) };
@@ -87,10 +87,13 @@
 
   async function refresh(why) {
     if (R.loading) return;
-    const places = S.places.filter((p) => p.lat != null);
+    // Always the main place and the one on screen; any other saved place only when its forecast is getting old.
+    const keep = new Set([(primary() || {}).id, S.selected]);
+    const places = S.places.filter((p) => p.lat != null && (keep.has(p.id) || !S.models[p.id] || Date.now() - (S.models[p.id].updated || 0) > FAR_STALE));
     if (!places.length) return;
     R.loading = true; R.lastAttempt = Date.now(); emit('status');
-    const results = await Promise.allSettled(places.map(fetchPlace));
+    const results = [];
+    for (let i = 0; i < places.length; i += CHUNK) results.push(...await Promise.allSettled(places.slice(i, i + CHUNK).map(fetchPlace)));
     const ok = results.some((r) => r.status === 'fulfilled');
     R.loading = false;
     R.offline = !ok;
@@ -118,9 +121,8 @@
       if ('login' in patch) host.post({ a: 'login', on: !!patch.login });
       if (patch.rain) host.post({ a: 'notifyPermission' });
     },
-    select(id) { if (S.places.some((p) => p.id === id) && S.selected !== id) { S.selected = id; save(); emit('select'); } },
+    select(id) { if (S.places.some((p) => p.id === id) && S.selected !== id) { S.selected = id; save(); emit('select'); const m = S.models[id]; if (!m || Date.now() - m.updated > 5 * 60e3) refresh('select'); } },
     addPlace(r) {
-      if (S.places.length >= MAX_PLACES) return false;
       const id = 'p' + r.id;
       if (S.places.some((p) => p.id === id)) { api.select(id); return true; }
       const twin = S.places.find((p) => sameSpot(p, { name: r.name, lat: r.latitude, lon: r.longitude }));
