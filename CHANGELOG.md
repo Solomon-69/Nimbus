@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.5 (3 Nov 2026)
+- The arrow now has the same shape as the other menu bar apps (system popover silhouette: wider, lower, straight sides, rounded tip).
+- Opening no longer flashes a dark blank panel or an old picture when the Mac is busy: the panel fades in from fully transparent while it pops out of the arrow.
+
 ## 1.0.4 (3 Nov 2026)
 - The panel's top now blends into the arrow with the sky gradient in light and dark, instead of a grey separation. It opens and closes with the same pop (grow from the arrow, small overshoot) as the system popover Ludus uses, and clicking the icon again closes it.
 

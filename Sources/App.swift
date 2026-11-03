@@ -21,6 +21,8 @@ enum NimbusApp {
 }
 
 private let arrowH: CGFloat = 12
+/// Visible arrow height; the tip sits this far above the body, the rest of the strip stays transparent.
+private let arrowTip: CGFloat = 10.7
 /// The web page is 380 wide and 620 tall plus a 12 pt strip at the top where the arrow sits; the sky gradient runs through that strip.
 private let panelSize = NSSize(width: 380, height: 620 + arrowH)
 
@@ -353,10 +355,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         p.addArc(tangent1End: CGPoint(x: size.width, y: 0), tangent2End: CGPoint(x: size.width, y: r), radius: r)
         p.addLine(to: CGPoint(x: size.width, y: top - r))
         p.addArc(tangent1End: CGPoint(x: size.width, y: top), tangent2End: CGPoint(x: size.width - r, y: top), radius: r)
-        p.addLine(to: CGPoint(x: ax + 15, y: top))
-        p.addCurve(to: CGPoint(x: ax + 3, y: top + arrowH - 1.6), control1: CGPoint(x: ax + 8, y: top), control2: CGPoint(x: ax + 6, y: top + arrowH - 2))
-        p.addQuadCurve(to: CGPoint(x: ax - 3, y: top + arrowH - 1.6), control: CGPoint(x: ax, y: top + arrowH + 1.2))
-        p.addCurve(to: CGPoint(x: ax - 15, y: top), control1: CGPoint(x: ax - 6, y: top + arrowH - 2), control2: CGPoint(x: ax - 8, y: top))
+        // Same silhouette as the system popover arrow the other menu bar apps use: about 28 pt wide, 10.7 pt tall,
+        // straight sides at about 45 degrees, soft fillets into the body and a rounded tip about 8 pt wide.
+        let h = arrowTip
+        p.addLine(to: CGPoint(x: ax + 14, y: top))
+        p.addCurve(to: CGPoint(x: ax + 9.6, y: top + 2.0), control1: CGPoint(x: ax + 11.8, y: top), control2: CGPoint(x: ax + 10.6, y: top + 0.8))
+        p.addLine(to: CGPoint(x: ax + 3.9, y: top + h - 1.8))
+        p.addCurve(to: CGPoint(x: ax - 3.9, y: top + h - 1.8), control1: CGPoint(x: ax + 2.2, y: top + h + 0.8), control2: CGPoint(x: ax - 2.2, y: top + h + 0.8))
+        p.addLine(to: CGPoint(x: ax - 9.6, y: top + 2.0))
+        p.addCurve(to: CGPoint(x: ax - 14, y: top), control1: CGPoint(x: ax - 10.6, y: top + 0.8), control2: CGPoint(x: ax - 11.8, y: top))
         p.addLine(to: CGPoint(x: r, y: top))
         p.addArc(tangent1End: CGPoint(x: 0, y: top), tangent2End: CGPoint(x: 0, y: top - r), radius: r)
         p.addLine(to: CGPoint(x: 0, y: r))
@@ -411,35 +418,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         let x = min(max(midX - panelSize.width / 2, screen.frame.minX + 8), screen.frame.maxX - panelSize.width - 8)
         arrowX = midX - x
         setShape(arrowX: arrowX)
-        let finalFrame = NSRect(x: x, y: icon.minY - panelSize.height + 1, width: panelSize.width, height: panelSize.height)
+        let finalFrame = NSRect(x: x, y: icon.minY - panelSize.height + 1 + (arrowH - arrowTip), width: panelSize.width, height: panelSize.height)
         shown = true
         button.highlight(true)
-        panel.alphaValue = 0.45
+        // The panel springs out of the arrow tip and fades in from fully transparent in the same moment, so the first frames
+        // are nearly invisible and no half-drawn (dark, flat) panel ever shows. The page already holds its main screen
+        // (reset when it closed); wx.opened() only refreshes it.
+        panel.alphaValue = 0
         panel.setFrame(finalFrame, display: true)
         panel.orderFrontRegardless()
         panel.makeKey()
         panel.makeFirstResponder(webView)
+        webView.alphaValue = 1
+        js("wx.opened()")
+        springPanel(opening: true)
         NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.2
+            ctx.duration = 0.16
             ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
             panel.animator().alphaValue = 1
         }
-        springPanel(opening: true)
         panel.invalidateShadow()
-        // Same as Ludus: the page keeps its last picture while closed, so it stays invisible until the fresh screen has
-        // really been drawn (two frames after wx.opened), then fades in. Never stays hidden.
-        webView.alphaValue = 0
-        openCount += 1
-        let thisOpen = openCount
-        let reveal: () -> Void = { [weak self] in
-            guard let self, self.openCount == thisOpen, self.webView.alphaValue < 1 else { return }
-            NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = 0.12
-                self.webView.animator().alphaValue = 1
-            }
-        }
-        webView.callAsyncJavaScript("wx.opened(); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));", arguments: [:], in: nil, in: .page) { _ in reveal() }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: reveal)
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
