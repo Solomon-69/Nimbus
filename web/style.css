@@ -96,7 +96,7 @@ body.kbd button:focus-visible, body.kbd .row:focus-visible, input:focus-visible 
 @keyframes snowfall { from { transform: translate(0, -10px); opacity: 0; } 15% { opacity: 1; } to { transform: translate(18px, 270px); opacity: 0.3; } }
 .star { width: 2px; height: 2px; border-radius: 50%; background: #fff; animation: twinkle ease-in-out infinite alternate; }
 @keyframes twinkle { from { opacity: 0.2; } to { opacity: 0.95; } }
-.moon-glow { right: 24px; top: 16px; width: 70px; height: 70px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 246, 214, 0.9) 0%, rgba(255, 246, 214, 0.25) 45%, transparent 70%); animation: glow 8s ease-in-out infinite alternate; }
+.moon { right: 30px; top: 22px; width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle at 38% 36%, rgba(255, 248, 228, 0.5) 0%, rgba(226, 222, 204, 0.3) 60%, rgba(226, 222, 204, 0) 72%); box-shadow: 0 0 26px rgba(255, 246, 214, 0.10); }
 .flash { inset: 0; background: rgba(255, 255, 255, 0.55); opacity: 0; animation: flashy 7s ease-in-out infinite; }
 @keyframes flashy { 0%, 90%, 100% { opacity: 0; } 92% { opacity: 0.8; } 95% { opacity: 0.1; } 97% { opacity: 0.6; } }
 #app > .hdr, #app > .scroll, #app > .ftr { position: relative; z-index: 1; }

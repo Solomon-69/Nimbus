@@ -75,12 +75,11 @@
     const clouds = (n, dark) => Array.from({ length: n }, (_, i) => `<i class="cl${dark ? ' d' : ''}" style="top:${8 + i * 32}px;left:${(i * 70) % 120}px;width:${150 + i * 40}px;height:${46 + i * 10}px;animation-duration:${70 + i * 28}s;animation-delay:-${i * 23}s"></i>`).join('');
     const rain = (n, ms) => Array.from({ length: n }, (_, i) => `<i class="rd" style="left:${(i * 37 + 13) % 100}%;height:${14 + (i % 3) * 5}px;animation-duration:${ms + (i % 5) * 160}ms;animation-delay:-${(i * 131) % 1500}ms"></i>`).join('');
     const snow = (n) => Array.from({ length: n }, (_, i) => `<i class="sf" style="left:${(i * 29 + 7) % 100}%;animation-duration:${4200 + (i % 4) * 700}ms;animation-delay:-${(i * 377) % 4000}ms"></i>`).join('');
-    const stars = Array.from({ length: 16 }, (_, i) => `<i class="star" style="left:${(i * 53 + 9) % 96}%;top:${(i * 31 + 5) % 70}%;animation-duration:${1800 + (i % 5) * 600}ms;animation-delay:-${(i * 290) % 2000}ms"></i>`).join('');
     let h = '';
     if (clearish && day) h += '<i class="sun-glow"></i>';
-    if (clearish && !day) h += '<i class="moon-glow"></i>' + stars;
-    if (k === 'partly') h += clouds(2);
-    if (k === 'cloud' || k === 'fog') h += clouds(4, k === 'cloud' && !day);
+    if (!day && (clearish || k === 'cloud' || k === 'fog')) h += '<i class="moon"></i>';   // night: one faded moon, no stars, no white blurs
+    if (k === 'partly') h += clouds(2, !day);
+    if (k === 'cloud' || k === 'fog') h += clouds(4, !day);
     if (k === 'rain' || k === 'drizzle') h += clouds(3, true) + rain(k === 'drizzle' ? 14 : 26, k === 'drizzle' ? 1700 : 1000);
     if (k === 'thunder') h += clouds(3, true) + rain(22, 950) + '<i class="flash"></i>';
     if (k === 'snow') h += clouds(3) + snow(22);

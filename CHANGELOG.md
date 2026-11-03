@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.3 (3 Nov 2026)
+- Night sky: one faded moon in the corner. No more stars, white dots or white blurs.
+
 ## 1.1.2 (3 Nov 2026)
 - Fix: the Updates row in Settings no longer cuts its text off ("You have the newest v..."); the message now wraps to as many lines as it needs.
 
