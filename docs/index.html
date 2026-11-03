@@ -11,9 +11,9 @@
 <meta property="og:title" content="Weather">
 <meta property="og:description" content="Weather in your menu bar, with a sky that moves. Free for Mac.">
 <meta property="og:type" content="website">
-<meta property="og:image" content="showcase/nimbus-og.png">
-<link rel="icon" type="image/png" href="pg/icon.png">
-<link rel="apple-touch-icon" href="pg/icon.png">
+<meta property="og:image" content="pg/showcase/nimbus-og.png">
+<link rel="icon" type="image/png" href="pg/img/icon.png">
+<link rel="apple-touch-icon" href="pg/img/icon.png">
 <style>
   :root {
     --bg: #f4f5f8;
@@ -206,7 +206,7 @@
     .js .reveal { opacity: 1; transform: none; }
   }
   /* showcase pictures fade softly into the page (edges are feathered in the image itself) */
-  img[src*="showcase/"] { border-radius: 0 !important; box-shadow: none !important; }
+  img[src*="pg/showcase/"] { border-radius: 0 !important; box-shadow: none !important; }
 
   .install .card h3 { display: flex; align-items: center; gap: 10px; }
 
@@ -223,7 +223,7 @@
 <header class="top" id="top">
   <div class="wrap bar">
     <a class="brand" href="https://solomon-69.github.io/Mac-Apps/" aria-label="Weather, back to all apps">
-      <span class="mark"><img src="pg/icon.png" width="34" height="34" alt=""></span>
+      <span class="mark"><img src="pg/img/icon.png" width="34" height="34" alt=""></span>
       Weather
     </a>
     <nav aria-label="Sections">
@@ -241,7 +241,7 @@
   <div class="wrap hero">
     <div>
       <picture class="appicon">
-        <img src="pg/icon.png" width="96" height="96" alt="The Weather app icon">
+        <img src="pg/img/icon.png" width="96" height="96" alt="The Weather app icon">
       </picture>
       <span class="eyebrow"><i aria-hidden="true"></i>Free and open source for Mac</span>
       <h1>Weather</h1>
@@ -260,7 +260,7 @@
 
     <div class="stagebox">
       <div class="glow" aria-hidden="true"></div>
-      <div class="shot"><div class="mbar" aria-hidden="true" style="width:min(400px,100%)"><div class="side l"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M2 9a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19.5" r="1.4" fill="currentColor"/></svg></div><b class="pad" style="width:auto;display:flex;gap:5px;align-items:center"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 18a4 4 0 0 1-.6-7.96A6 6 0 0 1 18 9.5 4.25 4.25 0 0 1 17.5 18z"/></svg><i class="clock" style="color:var(--ink)">9&deg;</i></b><div class="side r"><i class="clock">Wed 9:41</i></div></div><div class="pv" style="--w:340px"><picture class="float"><source media="(prefers-color-scheme: dark)" srcset="pg/pop-panel-dark.png"><img src="pg/pop-panel-light.png" width="340" height="566" alt="The Weather panel open under its menu bar icon, showing the weather in Edinburgh with the next 12 hours, rain, wind, UV, sunrise and air quality" fetchpriority="high"></picture></div></div>
+      <div class="shot"><div class="mbar" aria-hidden="true" style="width:min(400px,100%)"><div class="side l"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M2 9a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19.5" r="1.4" fill="currentColor"/></svg></div><b class="pad" style="width:auto;display:flex;gap:5px;align-items:center"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 18a4 4 0 0 1-.6-7.96A6 6 0 0 1 18 9.5 4.25 4.25 0 0 1 17.5 18z"/></svg><i class="clock" style="color:var(--ink)">9&deg;</i></b><div class="side r"><i class="clock">Wed 9:41</i></div></div><div class="pv" style="--w:340px"><picture class="float"><source media="(prefers-color-scheme: dark)" srcset="pg/img/pop-panel-dark.png"><img src="pg/img/pop-panel-light.png" width="340" height="566" alt="The Weather panel open under its menu bar icon, showing the weather in Edinburgh with the next 12 hours, rain, wind, UV, sunrise and air quality" fetchpriority="high"></picture></div></div>
     </div>
   </div>
 
@@ -319,7 +319,7 @@
       <p class="kicker reveal">A closer look</p>
       <h2 class="reveal">Open it, read it, make it yours</h2>
       <p class="intro reveal">Screenshots of the panel.</p>
-      <div class="pvgrid"><figure class="reveal" style="--w:330px"><div class="pv"><picture><source media="(prefers-color-scheme: dark)" srcset="pg/pop-panel-dark.png"><img src="pg/pop-panel-light.png" width="330" height="549" alt="The forecast panel with the hourly forecast, rain, wind, UV, sunrise and air quality" loading="lazy"></picture></div><figcaption>The forecast panel</figcaption></figure><figure class="reveal" style="--w:330px"><div class="pv"><picture><source media="(prefers-color-scheme: dark)" srcset="pg/pop-settings-dark.png"><img src="pg/pop-settings-light.png" width="330" height="525" alt="Settings: appearance, temperature, wind speed, menu bar, sky colour, rain alerts, places and open at login" loading="lazy"></picture></div><figcaption>Settings</figcaption></figure></div>
+      <div class="pvgrid"><figure class="reveal" style="--w:330px"><div class="pv"><picture><source media="(prefers-color-scheme: dark)" srcset="pg/img/pop-panel-dark.png"><img src="pg/img/pop-panel-light.png" width="330" height="549" alt="The forecast panel with the hourly forecast, rain, wind, UV, sunrise and air quality" loading="lazy"></picture></div><figcaption>The forecast panel</figcaption></figure><figure class="reveal" style="--w:330px"><div class="pv"><picture><source media="(prefers-color-scheme: dark)" srcset="pg/img/pop-settings-dark.png"><img src="pg/img/pop-settings-light.png" width="330" height="525" alt="Settings: appearance, temperature, wind speed, menu bar, sky colour, rain alerts, places and open at login" loading="lazy"></picture></div><figcaption>Settings</figcaption></figure></div>
     </div>
   </section>
 
