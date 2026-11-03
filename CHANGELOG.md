@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.4 (3 Nov 2026)
+- The panel's top now blends into the arrow with the sky gradient in light and dark, instead of a grey separation. It opens and closes with the same pop (grow from the arrow, small overshoot) as the system popover Ludus uses, and clicking the icon again closes it.
+
 ## 1.0.3 (3 Nov 2026)
 - The panel is now a real system popover, so it opens and closes with the same animation as Ludus and the other menu bar apps.
 - Clicking the menu bar icon again closes it.
