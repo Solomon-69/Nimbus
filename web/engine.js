@@ -107,12 +107,22 @@
     return now - R.lastAttempt >= (R.open ? OPEN_EVERY : CLOSED_EVERY);
   }
 
+  /* Same idea as Ludus: the panel keeps its last picture while closed, so the page is hidden then and only
+     shown again (a quick fade) once the fresh screen has really been drawn, two frames after opening. */
+  let revealSeq = 0;
+  function reveal() {
+    const root = document.documentElement, my = ++revealSeq;
+    const show = () => { if (my === revealSeq) root.classList.remove('vacant'); };
+    requestAnimationFrame(() => requestAnimationFrame(show));
+    setTimeout(show, 300);   // never stay hidden
+  }
+
   const api = {
     host, S, R, subscribe: (f) => { listeners.add(f); return () => listeners.delete(f); },
     primary, selectedPlace, checkRain,
     refresh, tick() { if (due()) refresh('timer'); emit('clock'); },
-    opened() { R.open = true; if (Date.now() - R.lastAttempt > STALE_ON_OPEN) refresh('open'); emit('opened'); },
-    closed() { R.open = false; emit('closed'); },
+    opened() { R.open = true; reveal(); if (Date.now() - R.lastAttempt > STALE_ON_OPEN) refresh('open'); emit('opened'); },
+    closed() { R.open = false; document.documentElement.classList.add('vacant'); emit('closed'); },
     wake() { R.nextRetry = 0; refresh('wake'); },
     setSettings(patch) {
       if ('unit' in patch || 'speed' in patch) patch = Object.assign({ autoUnits: false }, patch);

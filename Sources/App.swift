@@ -54,7 +54,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     private var container: NSView!
     private var rimView: RimView!
     private var shown = false
-    private var openCount = 0
     private var arrowX: CGFloat = 190
     private var webView: WKWebView!
     private var clickMonitor: Any?
@@ -425,20 +424,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         }
         springPanel(opening: true)
         panel.invalidateShadow()
-        // Same trick as Ludus: the page keeps its last picture while hidden, so keep it invisible until the
-        // fresh screen has really been drawn (two frames after wx.opened), then fade it in over the glass.
-        webView.alphaValue = 0
-        openCount += 1
-        let thisOpen = openCount
-        let reveal: () -> Void = { [weak self] in
-            guard let self, self.openCount == thisOpen, self.webView.alphaValue < 1 else { return }
-            NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = 0.12
-                self.webView.animator().alphaValue = 1
-            }
-        }
-        webView.callAsyncJavaScript("wx.opened(); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));", arguments: [:], in: nil, in: .page) { _ in reveal() }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: reveal)   // never stay hidden
+        js("wx.opened()")   // the page hides its stale picture itself and fades the fresh one in (see engine.js)
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             DispatchQueue.main.async { MainActor.assumeIsolated { self?.closePopover() } }
         }
@@ -457,7 +443,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         statusItem.button?.highlight(false)
         if let m = clickMonitor { NSEvent.removeMonitor(m); clickMonitor = nil }
         if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
-        openCount += 1
         js("wx.closed()")
         springPanel(opening: false)
         NSAnimationContext.runAnimationGroup({ ctx in

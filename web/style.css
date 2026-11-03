@@ -276,3 +276,7 @@ button.row:active { transform: scale(0.985); }
 #upd-row.busy .upd-bar { display: block; }
 .upd-bar i { display: block; height: 100%; width: 4%; border-radius: 999px; background: var(--accent); transition: width 0.25s var(--ease-out); }
 .btn:disabled { opacity: 0.6; cursor: default; }
+
+/* Open reveal: hidden while the panel is closed, fades in once drawn */
+#app { transition: opacity 0.12s ease-out; }
+html.vacant #app { opacity: 0; transition: none; }
