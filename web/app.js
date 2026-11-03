@@ -16,6 +16,7 @@
     sun: '<svg viewBox="0 0 24 24"><path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 6v3M5.6 10.6l1.8 1.8M18.4 10.6l-1.8 1.8"/></svg>',
     air: '<svg viewBox="0 0 24 24"><path d="M4 9c3-3 6 3 9 0s5-1 7 0M4 15c3-3 6 3 9 0s5-1 7 0"/></svg>',
     x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
     arrow: '<svg viewBox="0 0 24 24"><path d="M12 3l7 17-7-4-7 4z"/></svg>',
     search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>',
     moon: '<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>',
@@ -304,7 +305,7 @@
     if (!S.places.length) html += '<div class="hint">Nothing saved yet. Search for a city above.</div>';
     S.places.forEach((p) => {
       const m = S.models[p.id], d = m && window.wxDescribe(m.now.code, m.now.isDay);
-      html += `<div class="row" style="padding:4px 6px 4px 8px"><button class="row" data-sel="${p.id}" style="padding:6px 4px"><div class="list-icon" style="width:30px;text-align:center">${m ? window.wxIcon(d.kind, 28) : `<div class="tile">${IC.pin}</div>`}</div><div class="grow"><div class="ttl">${esc(p.name)}${p.current ? ' <span class="small">· My location</span>' : ''}</div><div class="sub">${m ? esc(d.text) : esc(p.sub || 'Loading...')}</div></div><div class="val num">${m ? C.temp(m.now.temp, s.unit) : ''}</div></button>${p.current ? '<span class="x-btn ghost" aria-hidden="true"></span>' : `<button class="x-btn" data-del="${p.id}" aria-label="Remove ${esc(p.name)}">${IC.x}</button>`}</div>`;
+      html += `<div class="row" style="padding:4px 6px 4px 8px"><button class="row" data-sel="${p.id}" style="padding:6px 4px"><div class="list-icon" style="width:30px;text-align:center">${m ? window.wxIcon(d.kind, 28) : `<div class="tile">${IC.pin}</div>`}</div><div class="grow"><div class="ttl">${esc(p.name)}${p.current ? ' <span class="small">· My location</span>' : ''}</div><div class="sub">${m ? esc(d.text) : esc(p.sub || 'Loading...')}</div></div><div class="val num">${m ? C.temp(m.now.temp, s.unit) : ''}</div></button>${p.current ? '<span class="x-btn ghost" aria-hidden="true"></span>' : `<button class="x-btn" data-del="${p.id}" aria-label="Remove ${esc(p.name)}" title="Remove">${IC.trash}</button>`}</div>`;
     });
     html += '</div>';
     if (R.loc === 'denied' && !hasHere) html += '<div class="hint warn">Location is switched off. Open System Settings, Privacy and Security, Location Services, and turn it on for Nimbus.</div>';

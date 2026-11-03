@@ -35,7 +35,19 @@
     }, 200);
   }
 
+  const sameSpot = (a, b) => a.lat != null && b.lat != null && Math.abs(a.lat - b.lat) < 0.15 && Math.abs(a.lon - b.lon) < 0.15 && String(a.name).toLowerCase() === String(b.name).toLowerCase();
+  /* One entry per real place: a saved city that is also "my location" folds into the location entry. */
+  function dedupe() {
+    const here = S.places.find((p) => p.current);
+    if (!here) return;
+    const drop = S.places.filter((p) => p !== here && sameSpot(p, here));
+    if (!drop.length) return;
+    S.places = S.places.filter((p) => !drop.includes(p));
+    drop.forEach((p) => { delete S.models[p.id]; if (S.selected === p.id) S.selected = here.id; });
+  }
+
   const primary = () => S.places.find((p) => p.current) || S.places[0] || null;
+  dedupe();
   const selectedPlace = () => S.places.find((p) => p.id === S.selected) || primary();
 
   function pushBar() {
@@ -111,6 +123,8 @@
       if (S.places.length >= MAX_PLACES) return false;
       const id = 'p' + r.id;
       if (S.places.some((p) => p.id === id)) { api.select(id); return true; }
+      const twin = S.places.find((p) => sameSpot(p, { name: r.name, lat: r.latitude, lon: r.longitude }));
+      if (twin) { api.select(twin.id); return true; }
       const sub = [r.admin1, r.country].filter(Boolean).join(', ');
       S.places.push({ id, name: r.name, sub, lat: r.latitude, lon: r.longitude });
       S.selected = id; save(); emit('places'); refresh('add');
@@ -155,6 +169,7 @@
       const sub = r.sub || '';
       if (!p) { p = { id: 'here', name: r.name || 'Current location', sub, lat: r.lat, lon: r.lon, current: true }; S.places.unshift(p); if (!S.selected) S.selected = p.id; }
       else { p.lat = r.lat; p.lon = r.lon; p.name = r.name || p.name; p.sub = sub || p.sub; }
+      dedupe();
       S.selected = S.selected || p.id; save(); emit('places'); refresh('location');
     },
     state: () => JSON.parse(JSON.stringify({ S, R })),
