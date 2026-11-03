@@ -1,5 +1,5 @@
 /* Nimbus engine: state, saving, live updates from Open-Meteo, and the link to the native shell.
-   The same file runs inside the Mac shell (WKWebView), the Windows shell (WebView2) and a plain browser (tests). */
+   The same file runs inside the Mac shell (WKWebView) and a plain browser (tests). */
 (function () {
   const C = window.WxCore;
   const KEY = 'weather.state.v1';
@@ -7,7 +7,6 @@
 
   const host = (() => {
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.wx) return { kind: 'mac', post: (m) => window.webkit.messageHandlers.wx.postMessage(m) };
-    if (window.chrome && window.chrome.webview) return { kind: 'win', post: (m) => window.chrome.webview.postMessage(m) };
     return { kind: 'web', post: () => {} };
   })();
 
@@ -151,6 +150,8 @@
       setTimeout(() => { if (R.loc === 'waiting') { R.loc = 'failed'; emit('loc'); } }, 25000);
     },
     quit() { host.post({ a: 'quit' }); },
+    updCheck() { host.post({ a: 'updCheck' }); },
+    updInstall() { host.post({ a: 'updInstall' }); },
     dismissWelcome() { S.seenWelcome = true; save(); emit('places'); },
   };
 
@@ -174,6 +175,7 @@
       dedupe();
       S.selected = S.selected || p.id; save(); emit('places'); refresh('location');
     },
+    update(u) { R.update = u; emit('update'); },
     state: () => JSON.parse(JSON.stringify({ S, R })),
   };
   window.WxEngine = api;

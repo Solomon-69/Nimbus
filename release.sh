@@ -14,15 +14,15 @@ codesign --verify --deep --strict "$APP"
 ditto -c -k --keepParent "$APP" "$OUT/submit.zip"
 xcrun notarytool submit "$OUT/submit.zip" --keychain-profile notary --wait
 xcrun stapler staple "$APP"
-ZIP="$REPO/dist/Nimbus-$VER-mac.zip"
+ZIP="$REPO/dist/Nimbus-mac.zip"
 ditto -c -k --keepParent "$APP" "$ZIP"
 mkdir -p "$OUT/dmg"; cp -R "$APP" "$OUT/dmg/"; ln -s /Applications "$OUT/dmg/Applications"
-DMG="$REPO/dist/Nimbus-$VER.dmg"
+DMG="$REPO/dist/Nimbus.dmg"
 hdiutil create -volname "Nimbus" -srcfolder "$OUT/dmg" -ov -format UDZO "$DMG" >/dev/null
 codesign --force --timestamp --sign "$ID" "$DMG"
 xcrun notarytool submit "$DMG" --keychain-profile notary --wait
 xcrun stapler staple "$DMG"
-( cd "$REPO/dist" && shasum -a 256 *.dmg *.zip > SHA256SUMS )
+( cd "$REPO/dist" && shasum -a 256 Nimbus.dmg Nimbus-mac.zip > SHA256SUMS.txt )
 spctl -a -vvv -t install "$DMG" 2>&1 | head -3 || true
 spctl -a -vvv "$APP" 2>&1 | head -3 || true
 echo "Release files in $REPO/dist"

@@ -12,14 +12,13 @@ Weather in your menu bar, with a sky that moves. Free, no account, no tracking.
 - A soft sky that follows the weather and the time of day. Pick blue, teal, warm, slate or none.
 - A rain alert before it rains. Units follow your Mac's region.
 - Menu bar shows the icon, the temperature, or both. Light, dark or automatic. Open at login.
-- Works offline with the last forecast. A Windows tray version is included.
+- Works offline with the last forecast.
 
 ![Nimbus settings](docs/img/settings.png)
 
 ## Download
 
 Mac (macOS 14 or later, Apple silicon): [Nimbus.dmg](https://github.com/Solomon-69/Nimbus/releases/latest/download/Nimbus.dmg). Signed and notarized by Apple.
-Windows 10 or 11: [Nimbus-windows.zip](https://github.com/Solomon-69/Nimbus/releases/latest/download/Nimbus-windows.zip).
 
 Or on a Mac, paste this into Terminal:
 
@@ -29,7 +28,7 @@ curl -fsSL https://solomon-69.github.io/Mac-Apps/download/install.sh | bash -s n
 
 ## Privacy
 
-Your location stays on your device. Only rough coordinates are sent to Open-Meteo to look up the weather. No account, no analytics. Windows can fall back to an approximate place from your network address if Windows location is off.
+Your location stays on your device. Only rough coordinates are sent to Open-Meteo to look up the weather. No account, no analytics.
 
 ## Build it yourself
 
@@ -38,7 +37,7 @@ Your location stays on your device. Only rough coordinates are sent to Open-Mete
 ./release.sh        # signed and notarized release (needs a Developer ID and a notary profile)
 ```
 
-The screens are plain web files in `web/`, shared by the Mac shell (`Sources/`, Swift) and the Windows shell (`windows/`, C# with WebView2). See `PROGRESS.md` for the build history.
+The screens are plain web files in `web/`, loaded by the Mac shell (`Sources/`, Swift). See `PROGRESS.md` for the build history.
 
 ## Licence
 

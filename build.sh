@@ -17,7 +17,7 @@ if [ ! -f "$REPO/assets/Nimbus.icns" ]; then
   iconutil -c icns "$OUT/Nimbus.iconset" -o "$REPO/assets/Nimbus.icns"
 fi
 
-TEST_FLAG="-DNIMBUS_TEST"; [ "${RELEASE:-0}" = "1" ] && TEST_FLAG=""
+TEST_FLAG="-DNIMBUS_TEST -DUPDATER_TEST"; [ "${RELEASE:-0}" = "1" ] && TEST_FLAG=""
 # shellcheck disable=SC2086
 swiftc -O -parse-as-library -swift-version 5 $TEST_FLAG -target arm64-apple-macos14.0 \
   -framework AppKit -framework WebKit -framework CoreLocation -framework ServiceManagement -framework Network -framework UserNotifications \

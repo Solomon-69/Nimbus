@@ -1,4 +1,4 @@
-/* Nimbus core: pure functions shared by the Mac app, the Windows app and the tests.
+/* Nimbus core: pure functions shared by the Mac app and the tests.
    Data source: Open-Meteo (free, no key). All stored values are metric; units are applied only when drawing. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();

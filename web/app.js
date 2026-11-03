@@ -23,6 +23,7 @@
     temp: '<svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg>',
     bar: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2"/><path d="M7 7h2M13 7h4"/></svg>',
     power: '<svg viewBox="0 0 24 24"><path d="M12 3v8M6.3 6.8a8 8 0 1 0 11.4 0"/></svg>',
+    refresh: '<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5M20 20v-4h-4"/></svg>',
     bell: '<svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9zM10 20a2 2 0 0 0 4 0"/></svg>',
     sky: '<svg viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.6-7.96A6 6 0 0 1 18 9.5 3.8 3.8 0 0 1 17.5 18z"/></svg>',
     login: '<svg viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9"/></svg>',
@@ -135,12 +136,33 @@
       </div></div>`;
   }
 
-  function spark(m) {
-    const t = m.hours.slice(0, 13).map((h) => h.temp), lo = Math.min(...t), hi = Math.max(...t), span = hi - lo || 1;
-    const pt = (v, i) => [(i * 100) / Math.max(1, t.length - 1), 6 + (1 - (v - lo) / span) * 24];
-    const P = t.map(pt), d = P.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
-    const hiI = t.indexOf(hi), loI = t.indexOf(lo);
-    return `<svg class="spark" viewBox="-4 0 108 36"><defs><linearGradient id="sg" x1="0" x2="1"><stop offset="0" stop-color="var(--cool)"/><stop offset="1" stop-color="var(--warm)"/></linearGradient><linearGradient id="sf" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--cool)" stop-opacity=".28"/><stop offset="1" stop-color="var(--cool)" stop-opacity="0"/></linearGradient></defs><path d="${d} L100 36 L0 36Z" fill="url(#sf)"/><path d="${d}" fill="none" stroke="url(#sg)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><circle cx="${P[0][0]}" cy="${P[0][1].toFixed(1)}" r="3" class="sp-now"/></svg>`;
+  const wetCode = (c) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95;
+  /* One plain sentence about what the next hours do. */
+  function outlook(m) {
+    const hs = m.hours.slice(0, 13), at = (h) => String(h.hour).padStart(2, '0') + ':00', u = S.settings.unit;
+    if (wetCode(hs[0].code) || m.now.precip > 0) {
+      const dry = hs.findIndex((h, k) => k && !wetCode(h.code) && h.pop < 40);
+      return dry > 0 ? `Easing around ${at(hs[dry])}` : 'Wet for the next 12 hours';
+    }
+    const wet = hs.findIndex((h, k) => k && wetCode(h.code) && (h.pop || 0) >= 50);
+    if (wet > 0) return `Rain likely around ${at(hs[wet])}`;
+    const last = hs[hs.length - 1], diff = last.temp - hs[0].temp;
+    if (Math.abs(diff) < 1.5) return `Steady around ${C.temp(hs[0].temp, u)}`;
+    return `${diff < 0 ? 'Cooling' : 'Warming'} to ${C.temp(last.temp, u)} by ${at(last)}`;
+  }
+
+  /* Temperature curve for the next 12 hours, drawn across the whole card, with the high and low marked. */
+  function curve(m) {
+    const hs = m.hours.slice(0, 13), t = hs.map((h) => h.temp), lo = Math.min(...t), hi = Math.max(...t), span = hi - lo || 1, n = t.length - 1 || 1;
+    const X = (i) => 4 + (i * 92) / n, Y = (v) => 8 + (1 - (v - lo) / span) * 36;
+    const d = t.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(2) + ' ' + Y(v).toFixed(2)).join(' ');
+    const dot = (i, cls, label) => `<span class="cdot ${cls}${i > n - 2 ? ' end' : ''}" style="left:${X(i)}%;top:${(Y(t[i]) / 52) * 100}%"><em>${label}</em></span>`;
+    const hiI = t.indexOf(hi), loI = t.indexOf(lo), u = S.settings.unit;
+    const marks = [dot(0, 'now', 'Now')];
+    if (hiI > 1 && hiI < n - 0) marks.push(dot(hiI, 'hi', C.temp(hi, u)));
+    if (loI > 1 && loI !== hiI) marks.push(dot(loI, 'lo', C.temp(lo, u)));
+    const ticks = [0, 3, 6, 9, 12].filter((k) => k <= n).map((k) => `<span>${k ? C.hourLabel(hs[k].hour, k) : 'Now'}</span>`).join('');
+    return `<div class="curve"><svg viewBox="0 0 100 52" preserveAspectRatio="none"><defs><linearGradient id="cg" x1="0" x2="1"><stop offset="0" stop-color="var(--cool)"/><stop offset="1" stop-color="var(--warm)"/></linearGradient><linearGradient id="cf" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--cool)" stop-opacity=".25"/><stop offset="1" stop-color="var(--cool)" stop-opacity="0"/></linearGradient></defs><path d="${d} L${X(n)} 52 L${X(0)} 52Z" fill="url(#cf)"/><path d="${d}" fill="none" stroke="url(#cg)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>${marks.join('')}</div><div class="ticks">${ticks}</div>`;
   }
 
   function mainHTML(p, m) {
@@ -152,15 +174,18 @@
       ['rain', 'Rain chance', now.pop + '%', now.pop >= 50 ? 'Take an umbrella' : 'Next 3 hours', 'var(--c-rain)', `<div class="mini"><i style="width:${Math.max(4, now.pop)}%"></i></div>`],
       ['wind', 'Wind', windText(m), 'From ' + C.compass(now.windDir), 'var(--c-wind)', `<svg class="wdir" viewBox="0 0 24 24" style="transform:rotate(${Math.round(now.windDir + 180)}deg)"><path d="M12 4v16M6 10l6-6 6 6"/></svg>`],
       ['uv', 'UV index', uv + '', C.uvLabel(now.uv), uvC, `<div class="mini uv"><b style="left:${Math.min(100, (uv / 11) * 100)}%"></b></div>`],
-      ['sun', 'Sunrise', now.sunrise, 'Sunset ' + now.sunset, 'var(--c-sun)', `<div class="mini day"><i style="width:${Math.max(4, dayPct)}%"></i></div>`],
+      ['sun', 'Sunrise', now.sunrise, 'Sunset ' + now.sunset, 'var(--c-sun)', `<div class="mini sunp"><i style="width:${Math.max(6, dayPct)}%"></i><b style="left:${Math.max(6, dayPct)}%"></b></div>`],
     ];
     let i = 1;
     const aq = m.aqi;
     return `
     <div class="card now" data-i="0">
-      <div class="now-l"><div class="temp num" id="big">${C.tempNum(now.temp, s.unit)}°</div><div class="small">Feels like ${C.temp(now.feels, s.unit)} · Humidity ${Math.round(now.humidity)}%</div></div>
-      <div class="now-m">${spark(m)}<div class="small">Next 12 hours</div></div>
-      <div class="now-r">${window.wxIcon(d.kind, 40)}<b>${esc(d.text)}</b><div class="small"><span class="hi-c">H ${C.temp(now.high, s.unit)}</span>  <span class="lo-c">L ${C.temp(now.low, s.unit)}</span></div></div>
+      <div class="now-top">
+        <div class="now-l"><div class="temp num" id="big">${C.tempNum(now.temp, s.unit)}°</div><div class="now-t">${esc(d.text)}</div></div>
+        <div class="now-r">${window.wxIcon(d.kind, 58)}<div class="hl"><span class="hi-c">H ${C.temp(now.high, s.unit)}</span><span class="lo-c">L ${C.temp(now.low, s.unit)}</span></div></div>
+      </div>
+      <div class="now-sum"><b>${esc(outlook(m))}</b><span>Feels ${C.temp(now.feels, s.unit)} · ${Math.round(now.humidity)}% humidity</span></div>
+      ${curve(m)}
     </div>
     <div class="grid">${tiles.map((t) => `<div class="card w" style="--c:${t[4]}" data-i="${i++}"><div class="tile">${IC[t[0]]}</div><div class="wt"><div class="small">${t[1]}</div><div class="v">${esc(t[2])}</div><div class="small">${esc(t[3])}</div>${t[0] === 'wind' ? '' : t[5]}</div>${t[0] === 'wind' ? t[5] : ''}</div>`).join('')}</div>
     ${aq ? `<div class="card aq" data-i="${i++}"><div class="tile ${aq.tone}">${IC.air}</div><div><div class="small">Air quality</div><div class="v num" style="font-size:15px">${esc(aq.label)} <span class="small">${aq.value}</span></div></div><div class="meter"><i class="${aq.tone}" style="width:${Math.min(100, Math.max(6, aq.value))}%"></i></div></div>` : ''}
@@ -263,6 +288,26 @@
   };
   const setRow = (icon, title, sub, control, tone) => { const r = document.createElement('div'); r.className = 'card row'; r.style.marginTop = '8px'; r.innerHTML = `<div class="tile ${tone || ''}">${IC[icon]}</div><div class="grow"><div class="ttl">${title}</div><div class="sub">${sub}</div></div>`; if (control) r.appendChild(control); return r; };
 
+  /* Updates row: Check for updates, then Update now. The state comes from the native shell. */
+  function fillUpdate(r) {
+    const u = R.update || { state: 'idle' }, cur = u.current || '1.0.0', b = r.querySelector('button'), sub = r.querySelector('.sub'), ttl = r.querySelector('.ttl'), bar = r.querySelector('.upd-bar i');
+    const busy = u.state === 'checking' || u.state === 'downloading' || u.state === 'installing';
+    ttl.textContent = u.state === 'available' ? `Version ${u.version} is ready` : u.state === 'downloading' ? 'Downloading the update' : u.state === 'installing' ? 'Installing' : 'Updates';
+    sub.textContent = ({ idle: `You have version ${cur}.`, checking: 'Looking for a newer version...', uptodate: `You have the newest version (${cur}).`, none: 'No public release yet, so there is nothing newer to get.', available: `You have ${cur}. The update is checked before it is installed.`, downloading: `${u.pct || 0}%. Nimbus restarts by itself when it is done.`, installing: 'Swapping in the new version...', failed: u.msg || 'The update did not work.' })[u.state] || '';
+    b.textContent = u.state === 'available' ? 'Update now' : busy ? '...' : 'Check for updates';
+    b.disabled = busy;
+    b.onclick = () => (u.state === 'available' ? E.updInstall() : E.updCheck());
+    r.classList.toggle('busy', u.state === 'downloading');
+    if (bar) bar.style.width = Math.max(4, u.pct || 0) + '%';
+  }
+  function updateRow() {
+    const b = document.createElement('button'); b.className = 'btn soft'; b.style.height = '30px'; b.style.padding = '0 12px';
+    const r = setRow('refresh', 'Updates', '', b);
+    r.id = 'upd-row'; r.insertAdjacentHTML('beforeend', '<div class="upd-bar"><i></i></div>');
+    fillUpdate(r);
+    return r;
+  }
+
   function buildSheet(name) {
     const sh = sheets[name];
     if (name === 'settings') {
@@ -277,6 +322,7 @@
         setRow('sky', 'Sky colour', 'Top of the panel', swatchesEl(s.sky, (v) => E.setSettings({ sky: v }))),
         setRow('bell', 'Rain alerts', 'Tell me before it rains', switchEl(!!s.rain, (v) => E.setSettings({ rain: v }), 'Rain alerts')),
         setRow('pin', 'Places', S.places.length + (S.places.length === 1 ? ' place saved' : ' places saved'), (() => { const b = document.createElement('button'); b.className = 'btn soft'; b.style.height = '30px'; b.style.padding = '0 12px'; b.textContent = 'Edit'; b.onclick = () => openSheet('places'); return b; })()),
+        updateRow(),
         setRow('login', 'Open at login', 'Start Nimbus when you sign in', switchEl(!!s.login, (v) => E.setSettings({ login: v }), 'Open at login')),
         setRow('power', 'Quit Nimbus', 'Close it completely', (() => { const b = document.createElement('button'); b.className = 'btn soft'; b.style.height = '30px'; b.style.padding = '0 12px'; b.textContent = 'Quit'; b.onclick = () => E.quit(); return b; })(), 'mute'));
     } else {
@@ -332,6 +378,7 @@
     else if (what === 'settings') { applySky(); renderMain(); if (openName === 'places') renderPlaces(); }
     else if (what === 'loc') { if (openName === 'places') renderPlaces(); else renderMain(); }
     else if (what === 'opened') { if (!openName) replayEnter(); }
+    else if (what === 'update') { const r = $('#upd-row'); if (r && openName === 'settings') fillUpdate(r); }
     else if (what === 'hostInfo') { if (openName === 'settings') buildSheet('settings'); if (!S.places.length) renderMain(); }
   });
 

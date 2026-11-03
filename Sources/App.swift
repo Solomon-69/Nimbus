@@ -4,6 +4,7 @@ import CoreLocation
 import ServiceManagement
 import Network
 import UserNotifications
+import Combine
 
 /// Nimbus: a menu bar weather app. A small Swift shell (menu bar item, popover, location, open at login)
 /// around the web screens in Resources/web, which fetch live weather from Open-Meteo.
@@ -46,10 +47,14 @@ final class RimView: NSView {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavigationDelegate, CLLocationManagerDelegate, UNUserNotificationCenterDelegate {
     private var statusItem: NSStatusItem!
+    private let updater = AppUpdater(AppDelegate.updateConfig)
+    private var updSub: AnyCancellable?
+    static let updateConfig = UpdateConfig(repo: "Solomon-69/Nimbus", appName: "Nimbus", bundleName: "Nimbus.app", zipName: "Nimbus-mac.zip")
     private var panel: GlassPanel!
     private var container: NSView!
     private var rimView: RimView!
     private var shown = false
+    private var openCount = 0
     private var arrowX: CGFloat = 190
     private var webView: WKWebView!
     private var clickMonitor: Any?
@@ -89,6 +94,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     // MARK: - Launch
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if UPDATER_TEST
+        if let arg = CommandLine.arguments.first(where: { $0.hasPrefix("--selftest-update=") }) {
+            let path = String(arg.dropFirst("--selftest-update=".count))
+            Task { @MainActor in exit(await AppUpdater.selfTest(Self.updateConfig, result: path) ? 0 : 1) }
+            return
+        }
+        #endif
         // One copy only: a second launch just opens the panel of the first.
         let me = Bundle.main.bundleIdentifier ?? "com.solomon.Nimbus"
         if NSRunningApplication.runningApplications(withBundleIdentifier: me).count > 1 {
@@ -102,6 +114,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         if SMAppService.mainApp.status == .enabled { try? SMAppService.mainApp.register() }
 
         UNUserNotificationCenter.current().delegate = self
+        updSub = updater.$state.sink { [weak self] s in self?.pushUpdate(s) }
         makeWebView()
         makeStatusItem()
         makePanel()
@@ -197,10 +210,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             askNotifyPermission()
         case "notify":
             sendNotice(title: body["title"] as? String ?? "Nimbus", body: body["body"] as? String ?? "")
+        case "updCheck":
+            Task { await updater.check() }
+        case "updInstall":
+            Task { await updater.install() }
         case "quit":
             quitAnimated()
         default: break
         }
+    }
+
+    private func pushUpdate(_ s: AppUpdater.State) {
+        var o: [String: Any] = ["current": updater.currentVersion]
+        switch s {
+        case .idle: o["state"] = "idle"
+        case .checking: o["state"] = "checking"
+        case .upToDate: o["state"] = "uptodate"
+        case .notPublished: o["state"] = "none"
+        case .available(let v): o["state"] = "available"; o["version"] = v
+        case .downloading(let p): o["state"] = "downloading"; o["pct"] = Int(p)
+        case .installing: o["state"] = "installing"
+        case .failed(let m): o["state"] = "failed"; o["msg"] = m
+        }
+        if let d = try? JSONSerialization.data(withJSONObject: o), let j = String(data: d, encoding: .utf8) { js("wx.update(\(j))") }
     }
 
     private func hostInfo() {
@@ -393,7 +425,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         }
         springPanel(opening: true)
         panel.invalidateShadow()
-        js("wx.opened()")
+        // Same trick as Ludus: the page keeps its last picture while hidden, so keep it invisible until the
+        // fresh screen has really been drawn (two frames after wx.opened), then fade it in over the glass.
+        webView.alphaValue = 0
+        openCount += 1
+        let thisOpen = openCount
+        let reveal: () -> Void = { [weak self] in
+            guard let self, self.openCount == thisOpen, self.webView.alphaValue < 1 else { return }
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.12
+                self.webView.animator().alphaValue = 1
+            }
+        }
+        webView.callAsyncJavaScript("wx.opened(); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));", arguments: [:], in: nil, in: .page) { _ in reveal() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: reveal)   // never stay hidden
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             DispatchQueue.main.async { MainActor.assumeIsolated { self?.closePopover() } }
         }
@@ -412,6 +457,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         statusItem.button?.highlight(false)
         if let m = clickMonitor { NSEvent.removeMonitor(m); clickMonitor = nil }
         if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
+        openCount += 1
         js("wx.closed()")
         springPanel(opening: false)
         NSAnimationContext.runAnimationGroup({ ctx in

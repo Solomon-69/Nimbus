@@ -4,6 +4,4 @@ assets/*.iconset
 QA/proof/
 .base-ast/
 .DS_Store
-windows/bin/
-windows/obj/
 dist/
