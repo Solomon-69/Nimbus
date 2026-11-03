@@ -136,35 +136,6 @@
       </div></div>`;
   }
 
-  const wetCode = (c) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95;
-  /* One plain sentence about what the next hours do. */
-  function outlook(m) {
-    const hs = m.hours.slice(0, 13), at = (h) => String(h.hour).padStart(2, '0') + ':00', u = S.settings.unit;
-    if (wetCode(hs[0].code) || m.now.precip > 0) {
-      const dry = hs.findIndex((h, k) => k && !wetCode(h.code) && h.pop < 40);
-      return dry > 0 ? `Easing around ${at(hs[dry])}` : 'Wet for the next 12 hours';
-    }
-    const wet = hs.findIndex((h, k) => k && wetCode(h.code) && (h.pop || 0) >= 50);
-    if (wet > 0) return `Rain likely around ${at(hs[wet])}`;
-    const last = hs[hs.length - 1], diff = last.temp - hs[0].temp;
-    if (Math.abs(diff) < 1.5) return `Steady around ${C.temp(hs[0].temp, u)}`;
-    return `${diff < 0 ? 'Cooling' : 'Warming'} to ${C.temp(last.temp, u)} by ${at(last)}`;
-  }
-
-  /* Temperature curve for the next 12 hours, drawn across the whole card, with the high and low marked. */
-  function curve(m) {
-    const hs = m.hours.slice(0, 13), t = hs.map((h) => h.temp), lo = Math.min(...t), hi = Math.max(...t), span = hi - lo || 1, n = t.length - 1 || 1;
-    const X = (i) => 4 + (i * 92) / n, Y = (v) => 8 + (1 - (v - lo) / span) * 36;
-    const d = t.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(2) + ' ' + Y(v).toFixed(2)).join(' ');
-    const dot = (i, cls, label) => `<span class="cdot ${cls}${i > n - 2 ? ' end' : ''}" style="left:${X(i)}%;top:${(Y(t[i]) / 52) * 100}%"><em>${label}</em></span>`;
-    const hiI = t.indexOf(hi), loI = t.indexOf(lo), u = S.settings.unit;
-    const marks = [dot(0, 'now', 'Now')];
-    if (hiI > 1 && hiI < n - 0) marks.push(dot(hiI, 'hi', C.temp(hi, u)));
-    if (loI > 1 && loI !== hiI) marks.push(dot(loI, 'lo', C.temp(lo, u)));
-    const ticks = [0, 3, 6, 9, 12].filter((k) => k <= n).map((k) => `<span>${k ? C.hourLabel(hs[k].hour, k) : 'Now'}</span>`).join('');
-    return `<div class="curve"><svg viewBox="0 0 100 52" preserveAspectRatio="none"><defs><linearGradient id="cg" x1="0" x2="1"><stop offset="0" stop-color="var(--cool)"/><stop offset="1" stop-color="var(--warm)"/></linearGradient><linearGradient id="cf" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--cool)" stop-opacity=".25"/><stop offset="1" stop-color="var(--cool)" stop-opacity="0"/></linearGradient></defs><path d="${d} L${X(n)} 52 L${X(0)} 52Z" fill="url(#cf)"/><path d="${d}" fill="none" stroke="url(#cg)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>${marks.join('')}</div><div class="ticks">${ticks}</div>`;
-  }
-
   function mainHTML(p, m) {
     const s = S.settings, now = m.now, d = window.wxDescribe(now.code, now.isDay);
     const rise = mins(now.sunrise), set = mins(now.sunset), nowM = mins((now.time || '').slice(11));
@@ -176,20 +147,12 @@
       ['uv', 'UV index', uv + '', C.uvLabel(now.uv), uvC, `<div class="mini uv"><b style="left:${Math.min(100, (uv / 11) * 100)}%"></b></div>`],
       ['sun', 'Sunrise', now.sunrise, 'Sunset ' + now.sunset, 'var(--c-sun)', `<div class="mini sunp"><i style="width:${Math.max(6, dayPct)}%"></i><b style="left:${Math.max(6, dayPct)}%"></b></div>`],
     ];
-    let i = 1;
+    let i = 0;
     const aq = m.aqi;
     return `
-    <div class="card now" data-i="0">
-      <div class="now-top">
-        <div class="now-l"><div class="temp num" id="big">${C.tempNum(now.temp, s.unit)}°</div><div class="now-t">${esc(d.text)}</div></div>
-        <div class="now-r">${window.wxIcon(d.kind, 58)}<div class="hl"><span class="hi-c">H ${C.temp(now.high, s.unit)}</span><span class="lo-c">L ${C.temp(now.low, s.unit)}</span></div></div>
-      </div>
-      <div class="now-sum"><b>${esc(outlook(m))}</b><span>Feels ${C.temp(now.feels, s.unit)} · ${Math.round(now.humidity)}% humidity</span></div>
-      ${curve(m)}
-    </div>
+    <div class="card hours" data-i="${i++}"><div class="hours-in" id="hours">${m.hours.map((h, k) => { const hd = window.wxDescribe(h.code, h.isDay); return `<div class="hr" style="--k:${k}"><div class="t">${C.hourLabel(h.hour, k)}</div>${window.wxIcon(hd.kind, 26)}<div class="d">${C.temp(h.temp, s.unit)}</div><div class="p">${h.pop >= 20 ? h.pop + '%' : ''}</div></div>`; }).join('')}</div></div>
     <div class="grid">${tiles.map((t) => `<div class="card w" style="--c:${t[4]}" data-i="${i++}"><div class="tile">${IC[t[0]]}</div><div class="wt"><div class="small">${t[1]}</div><div class="v">${esc(t[2])}</div><div class="small">${esc(t[3])}</div>${t[0] === 'wind' ? '' : t[5]}</div>${t[0] === 'wind' ? t[5] : ''}</div>`).join('')}</div>
     ${aq ? `<div class="card aq" data-i="${i++}"><div class="tile ${aq.tone}">${IC.air}</div><div><div class="small">Air quality</div><div class="v num" style="font-size:15px">${esc(aq.label)} <span class="small">${aq.value}</span></div></div><div class="meter"><i class="${aq.tone}" style="width:${Math.min(100, Math.max(6, aq.value))}%"></i></div></div>` : ''}
-    <div class="card hours" data-i="${i++}"><div class="hours-in" id="hours">${m.hours.map((h, k) => { const hd = window.wxDescribe(h.code, h.isDay); return `<div class="hr" style="--k:${k}"><div class="t">${C.hourLabel(h.hour, k)}</div>${window.wxIcon(hd.kind, 26)}<div class="d">${C.temp(h.temp, s.unit)}</div><div class="p">${h.pop >= 20 ? h.pop + '%' : ''}</div></div>`; }).join('')}</div></div>
     <div class="card days" data-i="${i++}">${(() => {
       const lo = Math.min(...m.days.map((x) => x.min)), hi = Math.max(...m.days.map((x) => x.max)), span = Math.max(1, hi - lo);
       return m.days.map((x, k) => { const dd = window.wxDescribe(x.code, 1); const a = ((x.min - lo) / span) * 100, b = ((x.max - lo) / span) * 100;
@@ -214,8 +177,8 @@
     scroll.scrollTop = fresh ? 0 : keepScroll;
     const hs = $('#hours'); if (hs && !fresh) hs.scrollLeft = keepHours;
     const big = $('#big'), t = C.tempNum(m.now.temp, S.settings.unit);
-    if (opts.rollFrom != null) roll(big, opts.rollFrom, t, 700);
-    else if (shown.id === p.id && shown.temp != null && shown.temp !== t) roll(big, shown.temp, t, 600);
+    if (big && opts.rollFrom != null) roll(big, opts.rollFrom, t, 700);
+    else if (big && shown.id === p.id && shown.temp != null && shown.temp !== t) roll(big, shown.temp, t, 600);
     shown = { id: p.id, temp: t };
   }
 
@@ -258,7 +221,45 @@
   }
   $('#b-places').onclick = () => openSheet('places');
   $('#b-settings').onclick = () => openSheet('settings');
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && openName) { e.preventDefault(); closeSheet(); } });
+  /* Keyboard in Settings: Up/Down move a highlight through the rows (wraps), Left/Right or Space/Return change the row, Esc goes back. */
+  let kbI = -1;
+  const kbRows = () => [...document.querySelectorAll('#set-body > .card.row')];
+  function kbShow() {
+    const rows = kbRows(), r = rows[kbI], body = $('#set-body'); if (!r || !body) return;
+    let p = body.querySelector('.kbpill'), fresh = false;
+    if (!p) { p = document.createElement('div'); p.className = 'kbpill'; body.prepend(p); fresh = true; }
+    p.style.transition = fresh ? 'none' : '';
+    p.style.height = r.offsetHeight + 'px'; p.style.transform = `translateY(${r.offsetTop}px)`; p.style.opacity = '1';
+    if (fresh) requestAnimationFrame(() => requestAnimationFrame(() => { p.style.transition = ''; }));
+    r.scrollIntoView({ block: 'nearest', behavior: reduceMotion() ? 'auto' : 'smooth' });
+  }
+  function kbMove(d) { const n = kbRows().length; if (!n) return; kbI = kbI < 0 ? (d > 0 ? 0 : n - 1) : (kbI + d + n) % n; kbShow(); }
+  function kbChange(dir) {   // dir: -1 left, 1 right, 0 = Space/Return
+    const r = kbRows()[kbI]; if (!r) return;
+    const group = r.querySelector('.seg, .swatches'), sw = r.querySelector('.sw'), btn = r.querySelector('button.btn');
+    if (group) {
+      const items = [...group.querySelectorAll('button')], cur = items.findIndex((b) => b.classList.contains('on'));
+      const next = dir === 0 ? (cur + 1) % items.length : Math.min(items.length - 1, Math.max(0, cur + dir));
+      if (next !== cur && items[next]) items[next].click();
+    } else if (sw) {
+      const on = sw.classList.contains('on');
+      if (dir === 0 || (dir < 0 && on) || (dir > 0 && !on)) sw.click();
+    } else if (btn && dir === 0) btn.click();
+  }
+  document.addEventListener('keydown', (e) => {
+    if (!openName) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeSheet(); return; }
+    if (openName !== 'settings' || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target && e.target.closest && e.target.closest('input, textarea')) return;
+    const k = e.key;
+    if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', ' ', 'Enter'].includes(k)) return;
+    e.preventDefault();
+    if (document.activeElement && document.activeElement.blur && document.activeElement !== document.body) document.activeElement.blur();
+    if (k === 'ArrowDown') kbMove(1); else if (k === 'ArrowUp') kbMove(-1);
+    else if (kbI < 0) kbMove(1);
+    else kbChange(k === 'ArrowLeft' ? -1 : k === 'ArrowRight' ? 1 : 0);
+  });
+  document.addEventListener('keyup', (e) => { if (openName === 'settings' && (e.key === ' ' || e.key === 'Enter') && !(e.target.closest && e.target.closest('input, textarea'))) e.preventDefault(); });
 
   const sheetHead = (title) => `<div class="hdr"><button class="icon-btn" data-back aria-label="Back">${IC.back}</button><div class="title">${title}</div><span style="width:32px"></span></div>`;
 
@@ -311,8 +312,8 @@
   function buildSheet(name) {
     const sh = sheets[name];
     if (name === 'settings') {
-      const s = S.settings;
-      sh.innerHTML = sheetHead('Settings') + '<div class="scroll"><div id="set-body"></div></div><div class="ftr">Nimbus 1.0 · Data from Open-Meteo</div>';
+      const s = S.settings; kbI = -1;
+      sh.innerHTML = sheetHead('Settings') + '<div class="scroll"><div id="set-body"></div></div><div class="ftr">Nimbus · Data from Open-Meteo</div>';
       const body = $('#set-body', sh);
       body.append(
         setRow('moon', 'Appearance', 'Light, dark or Auto', seg([['light', 'Light'], ['auto', 'Auto'], ['dark', 'Dark']], s.theme, (v) => { E.setSettings({ theme: v }); applyTheme(); })),
@@ -343,6 +344,36 @@
     sh.querySelectorAll('[data-back]').forEach((b) => b.onclick = () => closeSheet());
   }
 
+  /* Remove a saved place by swiping its row to the left (drag, or two fingers on the trackpad). No delete button. */
+  function bindSwipe(list) {
+    list.querySelectorAll('.prow[data-id]').forEach((row) => {
+      const inner = row.firstElementChild, id = row.dataset.id, SPRING = 'transform 0.38s cubic-bezier(0.34, 1.4, 0.5, 1)';
+      let x0 = null, dx = 0, t0 = 0, moved = false, acc = 0, idle = 0;
+      const set = (v) => { dx = v; inner.style.transform = `translateX(${v}px)`; row.style.setProperty('--sw', Math.min(1, -v / 90)); };
+      const back = () => { inner.style.transition = SPRING; set(0); };
+      const away = () => {
+        inner.style.transition = 'transform 0.2s ease-in, opacity 0.2s'; inner.style.transform = 'translateX(-105%)'; inner.style.opacity = '0';
+        setTimeout(() => { row.style.height = row.offsetHeight + 'px'; row.style.transition = 'height 0.2s ease, opacity 0.2s'; requestAnimationFrame(() => { row.style.height = '0'; }); setTimeout(() => E.removePlace(id), 210); }, 150);
+      };
+      inner.addEventListener('pointerdown', (e) => { if (e.button !== 0) return; x0 = e.clientX; t0 = performance.now(); moved = false; inner.style.transition = 'none'; });
+      inner.addEventListener('pointermove', (e) => {
+        if (x0 == null) return; const d = e.clientX - x0;
+        if (!moved && Math.abs(d) > 6) { moved = true; try { inner.setPointerCapture(e.pointerId); } catch (x) { /* ok */ } }
+        if (moved) set(d < 0 ? d : d * 0.15);
+      });
+      const up = () => { if (x0 == null) return; const v = dx / Math.max(1, performance.now() - t0); x0 = null; if (!moved) return; if (dx < -100 || (dx < -70 && v < -0.8)) away(); else back(); };
+      inner.addEventListener('pointerup', up); inner.addEventListener('pointercancel', up);
+      inner.addEventListener('click', (e) => { if (moved) { e.stopImmediatePropagation(); e.preventDefault(); moved = false; } }, true);
+      row.addEventListener('wheel', (e) => {
+        if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+        e.preventDefault(); inner.style.transition = 'none';
+        acc = Math.max(0, acc + e.deltaX); set(-acc);
+        clearTimeout(idle);
+        if (acc > 110) { acc = 0; away(); } else idle = setTimeout(() => { acc = 0; back(); }, 160);
+      }, { passive: false });
+    });
+  }
+
   function renderPlaces() {
     const sh = sheets.places, list = $('#plist', sh); if (!list) return;
     const s = S.settings;
@@ -353,13 +384,14 @@
     if (!S.places.length) html += '<div class="hint">Nothing saved yet. Search for a city above.</div>';
     S.places.forEach((p) => {
       const m = S.models[p.id], d = m && window.wxDescribe(m.now.code, m.now.isDay);
-      html += `<div class="row" style="padding:4px 6px 4px 8px"><button class="row" data-sel="${p.id}" style="padding:6px 4px"><div class="list-icon" style="width:30px;text-align:center">${m ? window.wxIcon(d.kind, 28) : `<div class="tile">${IC.pin}</div>`}</div><div class="grow"><div class="ttl">${esc(p.name)}${p.current ? ' <span class="small">· My location</span>' : ''}</div><div class="sub">${m ? esc(d.text) : esc(p.sub || 'Loading...')}</div></div><div class="val num">${m ? C.temp(m.now.temp, s.unit) : ''}</div></button>${p.current ? '<span class="x-btn ghost" aria-hidden="true"></span>' : `<button class="x-btn" data-del="${p.id}" aria-label="Remove ${esc(p.name)}" title="Remove">${IC.trash}</button>`}</div>`;
+      html += `<div class="prow"${p.current ? '' : ` data-id="${p.id}"`}><div class="row" style="padding:4px 6px 4px 8px"><button class="row" data-sel="${p.id}" style="padding:6px 4px"><div class="list-icon" style="width:30px;text-align:center">${m ? window.wxIcon(d.kind, 28) : `<div class="tile">${IC.pin}</div>`}</div><div class="grow"><div class="ttl">${esc(p.name)}${p.current ? ' <span class="small">· My location</span>' : ''}</div><div class="sub">${m ? esc(d.text) : esc(p.sub || 'Loading...')}</div></div><div class="val num">${m ? C.temp(m.now.temp, s.unit) : ''}</div></button></div></div>`;
     });
     html += '</div>';
+    if (S.places.some((p) => !p.current)) html += '<div class="hint">Swipe a place to the left to remove it.</div>';
     if (R.loc === 'denied' && !hasHere) html += '<div class="hint warn">Location is switched off. Open System Settings, Privacy and Security, Location Services, and turn it on for Nimbus.</div>';
     list.innerHTML = html;
     list.querySelectorAll('[data-sel]').forEach((b) => b.onclick = () => { E.select(b.dataset.sel); closeSheet(); });
-    list.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => E.removePlace(b.dataset.del));
+    bindSwipe(list);
     const h = $('#p-here', list); if (h) h.onclick = () => { E.locate(); renderPlaces(); };
   }
 

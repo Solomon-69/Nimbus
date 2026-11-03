@@ -280,3 +280,14 @@ button.row:active { transform: scale(0.985); }
 /* Open reveal: hidden while the panel is closed, fades in once drawn */
 #app { transition: opacity 0.12s ease-out; }
 html.vacant #app { opacity: 0; transition: none; }
+
+/* Swipe-to-remove rows (no delete button): a soft red wash grows behind the row as it slides left */
+.prow { position: relative; overflow: hidden; border-radius: 12px; }
+.prow::before { content: ""; position: absolute; inset: 0; background: color-mix(in srgb, var(--bad) calc(var(--sw, 0) * 22%), transparent); pointer-events: none; }
+.prow > .row { position: relative; touch-action: pan-y; }
+.card.hours { margin-top: 2px; }
+
+/* Keyboard highlight in Settings: one soft pill that glides between rows */
+#set-body { position: relative; }
+.kbpill { position: absolute; left: 0; right: 0; top: 0; z-index: 3; pointer-events: none; border-radius: var(--r-lg); opacity: 0; background: color-mix(in srgb, var(--accent) 9%, transparent); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent); transition: transform 0.42s var(--spring), height 0.3s var(--spring), opacity 0.2s; }
+.sw:focus, .sw:focus-visible, .seg button:focus, .swatch:focus { outline: none; }

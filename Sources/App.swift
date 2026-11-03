@@ -410,7 +410,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         setShape(arrowX: arrowX)
         let finalFrame = NSRect(x: x, y: icon.minY - panelSize.height + 1, width: panelSize.width, height: panelSize.height)
         shown = true
-        bounceIcon()
         button.highlight(true)
         panel.alphaValue = 0
         panel.setFrame(finalFrame, display: true)
@@ -466,19 +465,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         if shown { closePopover() } else { NSApp.terminate(nil) }
     }
 
-    private func bounceIcon() {
-        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion, let button = statusItem.button, let layer = button.layer else { return }
-        let b = button.bounds
-        var from = CATransform3DMakeTranslation(b.midX, b.midY, 0)
-        from = CATransform3DScale(from, 1.12, 1.12, 1)
-        from = CATransform3DTranslate(from, -b.midX, -b.midY, 0)
-        let bounce = CASpringAnimation(keyPath: "transform")
-        bounce.fromValue = from
-        bounce.toValue = CATransform3DIdentity
-        bounce.mass = 1; bounce.stiffness = 320; bounce.damping = 11
-        bounce.duration = bounce.settlingDuration
-        layer.add(bounce, forKey: "bounce")
-    }
 
     // MARK: - Open at login
 
