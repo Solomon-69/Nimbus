@@ -193,11 +193,15 @@ html.glass .sheet { padding-top: 12px; }
 .stack { display: grid; gap: 8px; }
 
 /* sheets */
-.sheet { position: absolute; inset: 0; background: color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter: blur(26px) saturate(1.5); backdrop-filter: blur(26px) saturate(1.5); z-index: 10; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transform: translateX(24px) scale(0.985); transition: opacity 0.22s var(--ease-out), transform 0.42s var(--spring); will-change: transform; visibility: hidden; }
+.sheet { position: absolute; inset: 0; background: color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter: blur(26px) saturate(1.5); backdrop-filter: blur(26px) saturate(1.5); z-index: 10; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transform: translateX(var(--sx, 100%)); transition: opacity 0.28s var(--ease-out), transform 0.5s cubic-bezier(0.32, 0.72, 0, 1); will-change: transform; visibility: hidden; }
+#sh-places { --sx: -100%; }
+#sh-settings { --sx: 100%; }
 .sheet.open { opacity: 1; pointer-events: auto; transform: none; visibility: visible; }
 .sheet.closing { visibility: visible; }
-#app > .hdr, #app > .scroll, #app > .ftr { transition: opacity 0.22s var(--ease-out), transform 0.42s var(--spring); }
-#app.paged > .hdr, #app.paged > .scroll, #app.paged > .ftr { opacity: 0; transform: translateX(-24px) scale(0.985); pointer-events: none; }
+#app > .hdr, #app > .scroll, #app > .ftr { transition: opacity 0.3s var(--ease-out), transform 0.5s cubic-bezier(0.32, 0.72, 0, 1); }
+#app.paged > .hdr, #app.paged > .scroll, #app.paged > .ftr { opacity: 0; pointer-events: none; }
+#app.paged-left > .hdr, #app.paged-left > .scroll, #app.paged-left > .ftr { transform: translateX(26%); }
+#app.paged-right > .hdr, #app.paged-right > .scroll, #app.paged-right > .ftr { transform: translateX(-26%); }
 .x-btn.ghost { visibility: hidden; pointer-events: none; }
 .sheet .scroll { padding-top: 6px; }
 .row { display: flex; align-items: center; gap: 11px; padding: 10px 12px; text-align: left; width: 100%; border-radius: var(--r-md); min-width: 0; }

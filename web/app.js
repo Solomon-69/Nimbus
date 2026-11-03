@@ -6,6 +6,7 @@
   const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const IC = {
+    places: '<svg viewBox="0 0 24 24"><path d="M9.5 6h10.5M9.5 12h10.5M9.5 18h10.5"/><circle cx="4.8" cy="6" r="1.1"/><circle cx="4.8" cy="12" r="1.1"/><circle cx="4.8" cy="18" r="1.1"/></svg>',
     pin: '<svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.2A7 7 0 0 0 5 9.8C5 14.8 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></svg>',
     gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
     back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
@@ -38,7 +39,7 @@
   const app = $('#app');
   app.innerHTML = `
     <div class="hdr">
-      <button class="icon-btn" id="b-places" aria-label="Places" title="Places">${IC.pin}</button>
+      <button class="icon-btn" id="b-places" aria-label="Places" title="Places">${IC.places}</button>
       <div class="title" id="title"></div>
       <button class="icon-btn" id="b-settings" aria-label="Settings" title="Settings">${IC.gear}</button>
     </div>
@@ -209,12 +210,12 @@
   function openSheet(name, focusSearch) {
     if (openName && openName !== name) closeSheet(true);
     openName = name; buildSheet(name);
-    const sh = sheets[name]; sh.classList.add('open'); sh.classList.remove('closing'); app.classList.add('paged');
+    const sh = sheets[name]; sh.classList.add('open'); sh.classList.remove('closing'); app.classList.remove('paged-left', 'paged-right'); app.classList.add('paged', name === 'places' ? 'paged-left' : 'paged-right');
     if (focusSearch) setTimeout(() => { const t = $('input', sh); if (t) t.focus({ preventScroll: true }); }, 60);
   }
   function closeSheet(instant) {
     if (!openName) return; const sh = sheets[openName]; openName = null;
-    if (!instant) app.classList.remove('paged');
+    if (!instant) app.classList.remove('paged', 'paged-left', 'paged-right');
     sh.classList.remove('open'); if (!instant) { sh.classList.add('closing'); setTimeout(() => sh.classList.remove('closing'), 480); }
     renderMain(); renderFooter();
   }

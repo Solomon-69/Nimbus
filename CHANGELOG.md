@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 (3 Nov 2026)
+- Places slides in from the left and Settings from the right, with a smoother glide, instead of both coming from the right.
+- The top-left button is now a list icon, since it opens your list of places.
+- The menu bar icon stays highlighted while the panel is open, like the other apps.
+
 ## 1.1.0 (3 Nov 2026)
 - Nimbus is now called Weather. The app, its download files and its web page all use the new name; your places, settings and login item carry over, and older versions update to it automatically.
 - New app icon: one soft cloud in front of the sun.

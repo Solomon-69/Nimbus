@@ -484,7 +484,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         setShape(arrowX: arrowX)
         let finalFrame = NSRect(x: x, y: icon.minY - panelSize.height + 1 + (arrowH - arrowTip), width: panelSize.width, height: panelSize.height)
         shown = true
+        // AppKit clears the pressed pill when the click finishes, so light it again right after the click returns,
+        // the way the popover apps keep it lit for as long as the panel is open.
         button.highlight(true)
+        DispatchQueue.main.async { [weak self] in if self?.shown == true { self?.statusItem.button?.highlight(true) } }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in if self?.shown == true { self?.statusItem.button?.highlight(true) } }
         // The panel springs out of the arrow tip and fades in from fully transparent in the same moment, so the first frames
         // are nearly invisible and no half-drawn (dark, flat) panel ever shows. The page already holds its main screen
         // (reset when it closed); wx.opened() only refreshes it.
@@ -664,7 +668,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         case "tick": js("wx.tick()")
         case "bar": log("bar kind=\(barKind) text=\(barText) style=\(barStyle) title=\(statusItem.button?.title ?? "") hasImage=\(statusItem.button?.image != nil)")
         case "frame":
-            if let w = statusItem.button?.window { log("icon frame=\(NSStringFromRect(w.frame)) popover=\(shown) pop=\(NSStringFromRect(panel.frame))") }
+            if let w = statusItem.button?.window { log("icon frame=\(NSStringFromRect(w.frame)) lit=\((statusItem.button?.cell as? NSButtonCell)?.isHighlighted ?? false) popover=\(shown) pop=\(NSStringFromRect(panel.frame))") }
         default:
             if command.hasPrefix("js:") {
                 let code = String(command.dropFirst(3))
