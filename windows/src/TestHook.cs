@@ -23,7 +23,7 @@ internal sealed class TestHook : IDisposable
         "JSON.stringify({sheet:window.WxUI?WxUI.state().sheet:null,theme:document.documentElement.getAttribute('data-theme')," +
         "places:WxEngine.S.places.length,loaded:Object.keys(WxEngine.S.models).length,offline:WxEngine.R.offline," +
         "unit:WxEngine.S.settings.unit,speed:WxEngine.S.settings.speed,sky:WxEngine.S.settings.sky," +
-        "w:innerWidth,h:innerHeight,hero:(document.querySelector('.hero')||{}).innerText||null})";
+        "w:innerWidth,h:innerHeight,hero:(document.querySelector('.now')||{}).innerText||null})";
 
     private readonly PopupForm popup;
     private readonly Func<Rectangle?> trayBounds;
@@ -153,7 +153,7 @@ internal sealed class TestHook : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         using var bmp = new Bitmap(area.Width, area.Height);
         using (var g = Graphics.FromImage(bmp))
-            g.CopyFromScreen(area.Location, Point.Empty, area.Size, CopyPixelOperation.SourceCopy | CopyPixelOperation.CaptureBlt);
+            g.CopyFromScreen(area.Location, Point.Empty, area.Size, CopyPixelOperation.SourceCopy);
         bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
         return true;
     }
