@@ -45,3 +45,5 @@ Brief: `Apps/WEATHER-APP-PROMPT.md`. Folder: `Apps/Weather`.
 - Fixes from Solomon's recording: Places temps now line up (hidden slot where the cross would be), search results show above the saved list, Settings and Places slide in like Ludus pages (24 px spring, home page slides back), no overshoot so the back button is never cut off, panel outline thinner, "Now" card has a 12-hour temperature line instead of empty space.
 - Windows: private repo Solomon-69/Nimbus, GitHub Windows runner run passes every check (live data, tray icon, light/dark, F/mph, places, Esc, location, restart, clean quit). Screenshots in QA/proof/windows.
 - Open: Windows location falls back to an IP lookup (ipapi.co) and a name lookup (bigdatacloud), which differs from the "stays on this device" wording. Publishing (public repo, page, Mac-Apps card, release) waits for Solomon's go.
+
+- 3 Nov: Mac only (Windows removed). Release v1.0.0 public: Nimbus.dmg, Nimbus-mac.zip, SHA256SUMS.txt. In-app update check added (shared AppUpdater, 5 cases tested). Panel reveal is done by the page (a native alpha of 0 made the panel paint blank). Mac-Apps page live.
