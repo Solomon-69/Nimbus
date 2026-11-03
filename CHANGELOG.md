@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3 (3 Nov 2026)
+- The panel is now a real system popover, so it opens and closes with the same animation as Ludus and the other menu bar apps.
+- Clicking the menu bar icon again closes it.
+- It always reopens on the main screen and shows the fresh screen, never a stale picture.
+
 ## 1.0.2 (3 Nov 2026)
 - Fix: the panel could open blank for a moment; the screen is now always visible and just settles in.
 

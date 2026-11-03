@@ -408,6 +408,7 @@
     else if (what === 'places') { applySky(); renderMain(); if (openName === 'places') renderPlaces(); renderFooter(); }
     else if (what === 'settings') { applySky(); renderMain(); if (openName === 'places') renderPlaces(); }
     else if (what === 'loc') { if (openName === 'places') renderPlaces(); else renderMain(); }
+    else if (what === 'closed') { if (openName) closeSheet(); }   // always reopens on the main screen, like the other apps
     else if (what === 'opened') { if (!openName) replayEnter(); }
     else if (what === 'update') { const r = $('#upd-row'); if (r && openName === 'settings') fillUpdate(r); }
     else if (what === 'hostInfo') { if (openName === 'settings') buildSheet('settings'); if (!S.places.length) renderMain(); }

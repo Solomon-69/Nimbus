@@ -20,46 +20,28 @@ enum NimbusApp {
     }
 }
 
-private let arrowH: CGFloat = 12
-/// The web page is 380 wide and 620 tall plus a 12 pt strip at the top where the arrow sits; the sky gradient runs through that strip.
-private let panelSize = NSSize(width: 380, height: 620 + arrowH)
-
-/// A borderless glass panel that can take keys (for typing a city) without activating the app.
-final class GlassPanel: NSPanel {
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { false }
-}
-
-/// Draws only the thin glass rim; never takes clicks.
-final class RimView: NSView {
-    let rim = CAShapeLayer()
-    override init(frame: NSRect) {
-        super.init(frame: frame)
-        wantsLayer = true
-        rim.fillColor = nil
-        rim.lineWidth = 1
-        layer?.addSublayer(rim)
-    }
-    required init?(coder: NSCoder) { fatalError() }
-    override func hitTest(_ point: NSPoint) -> NSView? { nil }
-}
+private let panelSize = NSSize(width: 380, height: 620)
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavigationDelegate, CLLocationManagerDelegate, UNUserNotificationCenterDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, WKScriptMessageHandler, WKNavigationDelegate, CLLocationManagerDelegate, UNUserNotificationCenterDelegate {
     private var statusItem: NSStatusItem!
     private let updater = AppUpdater(AppDelegate.updateConfig)
     private var updSub: AnyCancellable?
     static let updateConfig = UpdateConfig(repo: "Solomon-69/Nimbus", appName: "Nimbus", bundleName: "Nimbus.app", zipName: "Nimbus-mac.zip")
-    private var panel: GlassPanel!
-    private var container: NSView!
-    private var rimView: RimView!
+    private let popover = NSPopover()
     private var shown = false
-    private var arrowX: CGFloat = 190
+    private var styled = false
+    private var openCount = 0
     private var webView: WKWebView!
     private var clickMonitor: Any?
     private var keyMonitor: Any?
-    private var styled = false
     private var quitting = false
+    private var barTheme = "auto"
+    private func applyAppearance() {
+        let a: NSAppearance? = barTheme == "light" ? NSAppearance(named: .aqua) : barTheme == "dark" ? NSAppearance(named: .darkAqua) : nil
+        popover.appearance = a
+        popover.contentViewController?.view.window?.appearance = a
+    }
     private var pageReady = false
     private var pendingLocate = false
     private var barKind = "cloud"
@@ -197,8 +179,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             barStyle = body["style"] as? String ?? "both"
             barTip = body["tip"] as? String ?? "Nimbus"
             let theme = body["theme"] as? String ?? "auto"
-            panel.appearance = theme == "light" ? NSAppearance(named: .aqua) : theme == "dark" ? NSAppearance(named: .darkAqua) : nil
-            updateRim()
+            barTheme = theme
+            applyAppearance()
             if body["empty"] as? Bool == true { barText = "" }
             updateStatusItem()
         case "locate":
@@ -316,116 +298,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     // MARK: - Glass panel
 
     private func makePanel() {
-        panel = GlassPanel(contentRect: NSRect(origin: .zero, size: panelSize), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        panel.hasShadow = true
-        panel.level = .popUpMenu
-        panel.hidesOnDeactivate = false
-        panel.isReleasedWhenClosed = false
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
-        let root = NSView(frame: NSRect(origin: .zero, size: panelSize))
-        root.wantsLayer = true
-        panel.contentView = root
-        container = NSView(frame: root.bounds)
-        container.wantsLayer = true
-        root.addSubview(container)
-        let glass = NSVisualEffectView(frame: container.bounds)
-        glass.material = .popover
-        glass.blendingMode = .behindWindow
-        glass.state = .active
-        glass.autoresizingMask = [.width, .height]
-        container.addSubview(glass)
+        // A real NSPopover, like Ludus and the other menu bar apps, so it opens and closes with the same system animation.
+        let controller = NSViewController()
+        let container = NSView(frame: NSRect(origin: .zero, size: panelSize))
         webView.frame = container.bounds
         webView.autoresizingMask = [.width, .height]
         container.addSubview(webView)
-        rimView = RimView(frame: root.bounds)
-        root.addSubview(rimView)
-        setShape(arrowX: arrowX)
-    }
-
-    /// Rounded body with the arrow cut into the top edge, so the sky gradient flows right up into the arrow.
-    private static func shape(_ size: NSSize, arrowX ax: CGFloat) -> CGPath {
-        let r: CGFloat = 22, top = size.height - arrowH, p = CGMutablePath()
-        p.move(to: CGPoint(x: r, y: 0))
-        p.addLine(to: CGPoint(x: size.width - r, y: 0))
-        p.addArc(tangent1End: CGPoint(x: size.width, y: 0), tangent2End: CGPoint(x: size.width, y: r), radius: r)
-        p.addLine(to: CGPoint(x: size.width, y: top - r))
-        p.addArc(tangent1End: CGPoint(x: size.width, y: top), tangent2End: CGPoint(x: size.width - r, y: top), radius: r)
-        p.addLine(to: CGPoint(x: ax + 15, y: top))
-        p.addCurve(to: CGPoint(x: ax + 3, y: top + arrowH - 1.6), control1: CGPoint(x: ax + 8, y: top), control2: CGPoint(x: ax + 6, y: top + arrowH - 2))
-        p.addQuadCurve(to: CGPoint(x: ax - 3, y: top + arrowH - 1.6), control: CGPoint(x: ax, y: top + arrowH + 1.2))
-        p.addCurve(to: CGPoint(x: ax - 15, y: top), control1: CGPoint(x: ax - 6, y: top + arrowH - 2), control2: CGPoint(x: ax - 8, y: top))
-        p.addLine(to: CGPoint(x: r, y: top))
-        p.addArc(tangent1End: CGPoint(x: 0, y: top), tangent2End: CGPoint(x: 0, y: top - r), radius: r)
-        p.addLine(to: CGPoint(x: 0, y: r))
-        p.addArc(tangent1End: CGPoint(x: 0, y: 0), tangent2End: CGPoint(x: r, y: 0), radius: r)
-        p.closeSubpath()
-        return p
-    }
-
-    private func setShape(arrowX ax: CGFloat) {
-        let path = Self.shape(panelSize, arrowX: ax)
-        let mask = CAShapeLayer()
-        mask.path = path
-        container.layer?.mask = mask
-        rimView.rim.path = path
-        updateRim()
-    }
-
-    /// Springs the panel out of (or back into) the arrow tip, like the other menu bar apps.
-    private func springPanel(opening: Bool) {
-        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
-        let w = panelSize.width, h = panelSize.height
-        let s0: CGFloat = opening ? 0.97 : 0.97
-        var small = CATransform3DMakeTranslation((arrowX - w / 2) * (1 - s0), (h / 2) * (1 - s0), 0)
-        small = CATransform3DScale(small, s0, s0, 1)
-        let spring = CASpringAnimation(keyPath: "transform")
-        if opening {
-            spring.fromValue = small
-            spring.toValue = CATransform3DIdentity
-            spring.mass = 1; spring.stiffness = 520; spring.damping = 38
-            spring.duration = spring.settlingDuration
-        } else {
-            spring.fromValue = CATransform3DIdentity
-            spring.toValue = small
-            spring.duration = 0.14
-            spring.timingFunction = CAMediaTimingFunction(name: .easeIn)
-            spring.isRemovedOnCompletion = true
-        }
-        for layer in [container.layer, rimView.layer] { layer?.add(spring, forKey: "spring") }
-    }
-
-    private func updateRim() {
-        let dark = (panel.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
-        rimView?.rim.strokeColor = NSColor.white.withAlphaComponent(dark ? 0.16 : 0.5).cgColor
+        controller.view = container
+        controller.preferredContentSize = panelSize
+        popover.contentViewController = controller
+        popover.behavior = .applicationDefined
+        popover.animates = true
+        popover.delegate = self
     }
 
     private func openPopover() {
-        guard let button = statusItem.button, let bw = button.window, !shown else { return }
-        let icon = bw.frame, screen = bw.screen ?? NSScreen.main ?? NSScreen.screens[0]
-        let midX = icon.midX
-        let x = min(max(midX - panelSize.width / 2, screen.frame.minX + 8), screen.frame.maxX - panelSize.width - 8)
-        arrowX = midX - x
-        setShape(arrowX: arrowX)
-        let finalFrame = NSRect(x: x, y: icon.minY - panelSize.height + 1, width: panelSize.width, height: panelSize.height)
+        guard let button = statusItem.button, !popover.isShown else { return }
         shown = true
         button.highlight(true)
-        panel.alphaValue = 0
-        panel.setFrame(finalFrame, display: true)
-        panel.orderFrontRegardless()
-        panel.makeKey()
-        panel.makeFirstResponder(webView)
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.1
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            panel.animator().alphaValue = 1
+        popover.contentViewController?.preferredContentSize = panelSize
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        applyAppearance()
+        if let window = popover.contentViewController?.view.window {
+            // Take keys (for typing a city) without activating the app, so the menu bar stays as it was.
+            if !styled, let p = window as? NSPanel { p.styleMask.insert(.nonactivatingPanel); styled = true }
+            window.makeKey()
+            window.makeFirstResponder(webView)
         }
-        springPanel(opening: true)
-        panel.invalidateShadow()
-        js("wx.opened()")   // the page hides its stale picture itself and fades the fresh one in (see engine.js)
+        // Same as Ludus: the page keeps its last picture while the popover is closed, so keep it invisible until the
+        // fresh screen has really been drawn (two frames after wx.opened), then fade it in. Never stays hidden.
+        webView.alphaValue = 0
+        openCount += 1
+        let thisOpen = openCount
+        let reveal: () -> Void = { [weak self] in
+            guard let self, self.openCount == thisOpen, self.webView.alphaValue < 1 else { return }
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.12
+                self.webView.animator().alphaValue = 1
+            }
+        }
+        webView.callAsyncJavaScript("wx.opened(); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));", arguments: [:], in: nil, in: .page) { _ in reveal() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: reveal)
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            DispatchQueue.main.async { MainActor.assumeIsolated { self?.closePopover() } }
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    // A click on the icon itself is handled by the icon (it toggles), so it must not also close it here.
+                    if let w = self.statusItem.button?.window, w.frame.insetBy(dx: -2, dy: -2).contains(NSEvent.mouseLocation) { return }
+                    self.closePopover()
+                }
+            }
         }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard event.keyCode == 53, let self else { return event }   // Esc
@@ -437,32 +359,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     }
 
     private func closePopover() {
-        guard shown else { return }
+        guard popover.isShown else { return }
+        popover.performClose(nil)
+    }
+
+    func popoverDidClose(_ notification: Notification) {
         shown = false
+        openCount += 1
         statusItem.button?.highlight(false)
         if let m = clickMonitor { NSEvent.removeMonitor(m); clickMonitor = nil }
         if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
         js("wx.closed()")
-        springPanel(opening: false)
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.14
-            panel.animator().alphaValue = 0
-        }, completionHandler: { [weak self] in
-            MainActor.assumeIsolated {
-                guard let self, !self.shown else { return }
-                self.panel.orderOut(nil)
-                if self.quitting { NSApp.terminate(nil) }
-            }
-        })
+        if quitting { NSApp.terminate(nil) }
     }
 
     @objc private func statusClicked() {
-        if shown { closePopover() } else { openPopover() }
+        if popover.isShown { closePopover() } else { openPopover() }
     }
 
     private func quitAnimated() {
         quitting = true
-        if shown { closePopover() } else { NSApp.terminate(nil) }
+        if popover.isShown { closePopover() } else { NSApp.terminate(nil) }
     }
 
 
@@ -546,29 +463,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         case "panel": openPopover()
         case "close": closePopover()
         case "toggle": statusClicked()
-        case "sample":
-            // Opens the panel and logs the panel's scale and opacity every 25 ms, to prove the spring-in.
-            closePopover()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                MainActor.assumeIsolated {
-                    self.openPopover()
-                    var out: [String] = []
-                    for i in 0..<24 {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.025 * Double(i)) {
-                            MainActor.assumeIsolated {
-                                let t = self.container.layer?.presentation()?.transform.m11 ?? -1
-                                out.append(String(format: "%.3f/%.2f", t, self.panel.alphaValue))
-                                if i == 23 { self.log("spring m11/alpha: " + out.joined(separator: " ")) }
-                            }
-                        }
-                    }
-                }
-            }
         case "wake": js("wx.wake()")
         case "tick": js("wx.tick()")
         case "bar": log("bar kind=\(barKind) text=\(barText) style=\(barStyle) title=\(statusItem.button?.title ?? "") hasImage=\(statusItem.button?.image != nil)")
         case "frame":
-            if let w = statusItem.button?.window { log("icon frame=\(NSStringFromRect(w.frame)) popover=\(shown) pop=\(NSStringFromRect(panel.frame))") }
+            if let w = statusItem.button?.window { log("icon frame=\(NSStringFromRect(w.frame)) popover=\(popover.isShown) pop=\(NSStringFromRect(popover.contentViewController?.view.window?.frame ?? .zero))") }
         default:
             if command.hasPrefix("js:") {
                 let code = String(command.dropFirst(3))
