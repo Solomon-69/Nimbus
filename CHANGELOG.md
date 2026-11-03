@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.2 (3 Nov 2026)
+- Fix: the Updates row in Settings no longer cuts its text off ("You have the newest v..."); the message now wraps to as many lines as it needs.
+
 ## 1.1.1 (3 Nov 2026)
 - Places slides in from the left and Settings from the right, with a smoother glide, instead of both coming from the right.
 - The top-left button is now a list icon, since it opens your list of places.
