@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0 (3 Nov 2026)
+- Nimbus is now called Weather. The app, its download files and its web page all use the new name; your places, settings and login item carry over, and older versions update to it automatically.
+- New app icon: one soft cloud in front of the sun.
+
 ## 1.0.6 (3 Nov 2026)
 - The panel now grows out of the menu bar icon (it grew from the left side before) and keeps the arrow tip pinned under the icon the whole time.
 - No dark empty box while it opens or closes, and the weather cards are there from the first frame instead of fading in late.

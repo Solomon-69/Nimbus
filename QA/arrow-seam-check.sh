@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"; mkdir -p proof
 WX=/private/tmp/wxtest
-WINID='ObjC.import("CoreGraphics");ObjC.import("Foundation");const a=ObjC.deepUnwrap(ObjC.castRefToObject($.CGWindowListCopyWindowInfo(1,0)));const w=a.filter(x=>x.kCGWindowOwnerName==="Nimbus"&&x.kCGWindowBounds.Height>300);w.length?w[0].kCGWindowNumber:"none"'
+WINID='ObjC.import("CoreGraphics");ObjC.import("Foundation");const a=ObjC.deepUnwrap(ObjC.castRefToObject($.CGWindowListCopyWindowInfo(1,0)));const w=a.filter(x=>x.kCGWindowOwnerName==="WeatherBar"&&x.kCGWindowBounds.Height>300);w.length?w[0].kCGWindowNumber:"none"'
 for theme in light dark; do
   $WX "js:WxEngine.setSettings({theme:'$theme'})"; /bin/sleep 0.4
   id=none

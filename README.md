@@ -1,8 +1,8 @@
-# Nimbus
+# Weather
 
 Weather in your menu bar, with a sky that moves. Free, no account, no tracking.
 
-![Nimbus main screen](docs/img/main.png)
+![Weather main screen](docs/img/main.png)
 
 ## What it does
 
@@ -14,16 +14,16 @@ Weather in your menu bar, with a sky that moves. Free, no account, no tracking.
 - Menu bar shows the icon, the temperature, or both. Light, dark or automatic. Open at login.
 - Works offline with the last forecast.
 
-![Nimbus settings](docs/img/settings.png)
+![Weather settings](docs/img/settings.png)
 
 ## Download
 
-Mac (macOS 14 or later, Apple silicon): [Nimbus.dmg](https://github.com/Solomon-69/Nimbus/releases/latest/download/Nimbus.dmg). Signed and notarized by Apple.
+Mac (macOS 14 or later, Apple silicon): [Weather.dmg](https://github.com/Solomon-69/Weather/releases/latest/download/Weather.dmg). Signed and notarized by Apple.
 
 Or on a Mac, paste this into Terminal:
 
 ```bash
-curl -fsSL https://solomon-69.github.io/Mac-Apps/download/install.sh | bash -s nimbus
+curl -fsSL https://solomon-69.github.io/Mac-Apps/download/install.sh | bash -s weather
 ```
 
 ## Privacy

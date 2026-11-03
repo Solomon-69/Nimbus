@@ -1,4 +1,4 @@
-/* Nimbus icons, drawn in code. One function: wxIcon(kind, size) -> SVG string.
+/* Weather icons, drawn in code. One function: wxIcon(kind, size) -> SVG string.
    kinds: clear, partly, cloud, rain, drizzle, snow, thunder, fog, wind
    night: pass kind + "-n" for moon variants (clear-n, partly-n). */
 (function () {

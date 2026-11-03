@@ -6,10 +6,10 @@ import Network
 import UserNotifications
 import Combine
 
-/// Nimbus: a menu bar weather app. A small Swift shell (menu bar item, popover, location, open at login)
+/// Weather: a menu bar weather app. A small Swift shell (menu bar item, popover, location, open at login)
 /// around the web screens in Resources/web, which fetch live weather from Open-Meteo.
 @main
-enum NimbusApp {
+enum WeatherApp {
     @MainActor
     static func main() {
         let app = NSApplication.shared
@@ -51,7 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     private var statusItem: NSStatusItem!
     private let updater = AppUpdater(AppDelegate.updateConfig)
     private var updSub: AnyCancellable?
-    static let updateConfig = UpdateConfig(repo: "Solomon-69/Nimbus", appName: "Nimbus", bundleName: "Nimbus.app", zipName: "Nimbus-mac.zip")
+    static let updateConfig = UpdateConfig(repo: "Solomon-69/Weather", appName: "Weather", bundleName: "Weather.app", zipName: "Weather-mac.zip")
     private var panel: GlassPanel!
     private var container: NSView!
     private var rimView: RimView!
@@ -70,7 +70,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     private var barKind = "cloud"
     private var barText = ""
     private var barStyle = "both"
-    private var barTip = "Nimbus"
+    private var barTip = "Weather"
 
     private lazy var locationManager: CLLocationManager = {
         let m = CLLocationManager()
@@ -83,17 +83,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
     private static let supportDir: URL = {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dir = base.appendingPathComponent("Nimbus", isDirectory: true)
+        let dir = base.appendingPathComponent("Weather", isDirectory: true)
         let fm = FileManager.default
-        if !fm.fileExists(atPath: dir.path) {
-            // First launch after the rename from Weather: keep the saved places and settings.
-            let old = base.appendingPathComponent("Weather", isDirectory: true)
-            if fm.fileExists(atPath: old.path) { try? fm.copyItem(at: old, to: dir) }
-        }
         try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        // First launch after the rename from Nimbus: bring over the saved places and settings (the Nimbus copy is the
+        // newest one; an older "Weather" folder may still exist from before the Nimbus name).
+        let old = base.appendingPathComponent("Nimbus/state.json"), new = dir.appendingPathComponent("state.json")
+        let marker = dir.appendingPathComponent(".from-nimbus")
+        if fm.fileExists(atPath: old.path), !fm.fileExists(atPath: marker.path) {
+            try? fm.removeItem(at: new)
+            try? fm.copyItem(at: old, to: new)
+            fm.createFile(atPath: marker.path, contents: nil)
+        }
         return dir
     }()
     private static var stateURL: URL { supportDir.appendingPathComponent("state.json") }
+
+    /// An update from Nimbus 1.0.x arrives as Nimbus.app. Rename the bundle to Weather.app once, then start again from there.
+    private func moveOutOfOldName() -> Bool {
+        let url = Bundle.main.bundleURL, fm = FileManager.default
+        guard url.lastPathComponent == "Nimbus.app" else { return false }
+        let target = url.deletingLastPathComponent().appendingPathComponent("Weather.app")
+        guard !fm.fileExists(atPath: target.path), (try? fm.moveItem(at: url, to: target)) != nil else { return false }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/sh")
+        p.arguments = ["-c", "sleep 1; /usr/bin/open -g \"$0\"", target.path]
+        try? p.run()
+        NSApp.terminate(nil)
+        return true
+    }
+
+    /// Open at login belonged to the old Nimbus app; switch it on again for Weather if it was on.
+    private func carryOverLogin() {
+        guard SMAppService.mainApp.status != .enabled,
+              let data = try? Data(contentsOf: Self.stateURL),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let settings = json["settings"] as? [String: Any], settings["login"] as? Bool == true else { return }
+        try? SMAppService.mainApp.register()
+    }
 
     // MARK: - Launch
 
@@ -105,17 +132,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             return
         }
         #endif
+        if moveOutOfOldName() { return }
         // One copy only: a second launch just opens the panel of the first.
         let me = Bundle.main.bundleIdentifier ?? "com.solomon.Nimbus"
         if NSRunningApplication.runningApplications(withBundleIdentifier: me).count > 1 {
-            DistributedNotificationCenter.default().postNotificationName(.init("com.solomon.Nimbus.open"), object: nil, userInfo: nil, deliverImmediately: true)
+            DistributedNotificationCenter.default().postNotificationName(.init("com.solomon.Weather.open"), object: nil, userInfo: nil, deliverImmediately: true)
             NSApp.terminate(nil)
             return
         }
-        DistributedNotificationCenter.default().addObserver(forName: .init("com.solomon.Nimbus.open"), object: nil, queue: .main) { [weak self] _ in
+        DistributedNotificationCenter.default().addObserver(forName: .init("com.solomon.Weather.open"), object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.openPopover() }
         }
         if SMAppService.mainApp.status == .enabled { try? SMAppService.mainApp.register() }
+        carryOverLogin()
 
         UNUserNotificationCenter.current().delegate = self
         updSub = updater.$state.sink { [weak self] s in self?.pushUpdate(s) }
@@ -142,7 +171,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         }
         pathMonitor.start(queue: DispatchQueue(label: "nimbus.net"))
         #if NIMBUS_TEST
-        DistributedNotificationCenter.default().addObserver(self, selector: #selector(testCommand(_:)), name: .init("com.solomon.Nimbus.test"), object: nil)
+        DistributedNotificationCenter.default().addObserver(self, selector: #selector(testCommand(_:)), name: .init("com.solomon.Weather.test"), object: nil)
         #endif
         log("launched")
     }
@@ -168,7 +197,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         webView = WKWebView(frame: NSRect(origin: .zero, size: panelSize), configuration: config)
         webView.setValue(false, forKey: "drawsBackground")
         webView.navigationDelegate = self
-        webView.setAccessibilityLabel("Nimbus")
+        webView.setAccessibilityLabel("Weather")
         if let dir = Bundle.main.resourceURL?.appendingPathComponent("web", isDirectory: true) {
             webView.loadFileURL(dir.appendingPathComponent("index.html"), allowingReadAccessTo: dir)
         }
@@ -200,7 +229,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             barKind = body["kind"] as? String ?? "cloud"
             barText = body["text"] as? String ?? ""
             barStyle = body["style"] as? String ?? "both"
-            barTip = body["tip"] as? String ?? "Nimbus"
+            barTip = body["tip"] as? String ?? "Weather"
             let theme = body["theme"] as? String ?? "auto"
             panel.appearance = theme == "light" ? NSAppearance(named: .aqua) : theme == "dark" ? NSAppearance(named: .darkAqua) : nil
             updateRim()
@@ -213,7 +242,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         case "notifyPermission":
             askNotifyPermission()
         case "notify":
-            sendNotice(title: body["title"] as? String ?? "Nimbus", body: body["body"] as? String ?? "")
+            sendNotice(title: body["title"] as? String ?? "Weather", body: body["body"] as? String ?? "")
         case "updCheck":
             Task { await updater.check() }
         case "updInstall":
@@ -279,14 +308,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
     private func makeStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.autosaveName = "NimbusItem"
+        statusItem.autosaveName = "WeatherItem"
         if let button = statusItem.button {
             button.wantsLayer = true
             button.target = self
             button.action = #selector(statusClicked)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.imagePosition = .imageLeading
-            button.setAccessibilityLabel("Nimbus")
+            button.setAccessibilityLabel("Weather")
         }
         updateStatusItem()
     }
@@ -597,7 +626,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     // MARK: - Log and test hook
 
     private func log(_ line: String) {
-        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Nimbus.log")
+        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Weather.log")
         let text = "\(ISO8601DateFormatter().string(from: Date())) \(line)\n"
         if let handle = try? FileHandle(forWritingTo: url) { handle.seekToEndOfFile(); handle.write(Data(text.utf8)); try? handle.close() }
         else { try? text.write(to: url, atomically: true, encoding: .utf8) }

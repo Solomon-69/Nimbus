@@ -1,7 +1,7 @@
 import AppKit
 
-// Draws the Nimbus app icon (soft blue sky tile, warm sun peeking over a white cloud) into an .iconset folder.
-// Usage: mkicon <output-dir>   ->  <output-dir>/Nimbus.iconset
+// Draws the Weather app icon (soft blue sky tile, warm sun peeking over a white cloud) into an .iconset folder.
+// Usage: mkicon <output-dir>   ->  <output-dir>/Weather.iconset
 
 func draw(size: Int) -> NSImage {
     let s = CGFloat(size)
@@ -42,7 +42,7 @@ func draw(size: Int) -> NSImage {
 }
 
 let out = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "."
-let set = (out as NSString).appendingPathComponent("Nimbus.iconset")
+let set = (out as NSString).appendingPathComponent("Weather.iconset")
 try? FileManager.default.createDirectory(atPath: set, withIntermediateDirectories: true)
 let sizes: [(String, Int)] = [
     ("icon_16x16", 16), ("icon_16x16@2x", 32), ("icon_32x32", 32), ("icon_32x32@2x", 64),

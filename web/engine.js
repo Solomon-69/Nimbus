@@ -1,4 +1,4 @@
-/* Nimbus engine: state, saving, live updates from Open-Meteo, and the link to the native shell.
+/* Weather engine: state, saving, live updates from Open-Meteo, and the link to the native shell.
    The same file runs inside the Mac shell (WKWebView) and a plain browser (tests). */
 (function () {
   const C = window.WxCore;

@@ -3,19 +3,20 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key><string>en</string>
-	<key>CFBundleExecutable</key><string>Nimbus</string>
-	<key>CFBundleIconFile</key><string>Nimbus</string>
+	<key>CFBundleExecutable</key><string>WeatherBar</string>
+	<key>CFBundleIconFile</key><string>Weather</string>
+	<!-- Kept from the Nimbus name on purpose: updates, location and notification permission are tied to this id. -->
 	<key>CFBundleIdentifier</key><string>com.solomon.Nimbus</string>
 	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-	<key>CFBundleName</key><string>Nimbus</string>
-	<key>CFBundleDisplayName</key><string>Nimbus</string>
+	<key>CFBundleName</key><string>Weather</string>
+	<key>CFBundleDisplayName</key><string>Weather</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
-	<key>CFBundleShortVersionString</key><string>1.0.6</string>
-	<key>CFBundleVersion</key><string>1</string>
+	<key>CFBundleShortVersionString</key><string>1.1.0</string>
+	<key>CFBundleVersion</key><string>2</string>
 	<key>LSMinimumSystemVersion</key><string>14.0</string>
 	<key>LSUIElement</key><true/>
-	<key>NSLocationUsageDescription</key><string>Nimbus uses your location to show the forecast for where you are. Only the rough coordinates are sent to Open-Meteo to look up the weather.</string>
-	<key>NSLocationWhenInUseUsageDescription</key><string>Nimbus uses your location to show the forecast for where you are. Only the rough coordinates are sent to Open-Meteo to look up the weather.</string>
-	<key>NSHumanReadableCopyright</key><string>Nimbus, made by Solomon, 2026.</string>
+	<key>NSLocationUsageDescription</key><string>Weather uses your location to show the forecast for where you are. Only the rough coordinates are sent to Open-Meteo to look up the weather.</string>
+	<key>NSLocationWhenInUseUsageDescription</key><string>Weather uses your location to show the forecast for where you are. Only the rough coordinates are sent to Open-Meteo to look up the weather.</string>
+	<key>NSHumanReadableCopyright</key><string>Weather, made by Solomon, 2026.</string>
 </dict>
 </plist>

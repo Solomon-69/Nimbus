@@ -1,4 +1,4 @@
-/* Nimbus screens: header, main scroll, Places and Settings sheets. Draws from WxEngine state only. */
+/* Weather screens: header, main scroll, Places and Settings sheets. Draws from WxEngine state only. */
 (function () {
   const E = window.WxEngine, C = window.WxCore, S = E.S, R = E.R;
   const $ = (s, el) => (el || document).querySelector(s);
@@ -129,7 +129,7 @@
     return `<div class="card welcome" data-i="0">
       <div class="tile">${IC.pin}</div>
       <h2>Weather where you are</h2>
-      <p>${denied ? 'Location is switched off for Nimbus. You can turn it on in System Settings, or pick a city instead.' : 'Nimbus can use your location to show the forecast for where you are. It stays on this Mac and is only used to look up the weather.'}</p>
+      <p>${denied ? 'Location is switched off for Weather. You can turn it on in System Settings, or pick a city instead.' : 'Weather can use your location to show the forecast for where you are. It stays on this Mac and is only used to look up the weather.'}</p>
       <div class="stack">
         ${E.R.hostInfo.canLocate ? `<button class="btn" id="w-loc">${wait ? 'Finding you...' : 'Use my location'} <span class="arr">→</span></button>` : ''}
         <button class="btn soft" id="w-city">Pick a city instead</button>
@@ -162,7 +162,7 @@
 
   function renderTitle() {
     const p = E.selectedPlace();
-    $('#title').innerHTML = p ? `${esc(p.name)}${p.current ? `<small>My location</small>` : p.sub ? `<small>${esc(p.sub)}</small>` : ''}` : 'Nimbus';
+    $('#title').innerHTML = p ? `${esc(p.name)}${p.current ? `<small>My location</small>` : p.sub ? `<small>${esc(p.sub)}</small>` : ''}` : 'Weather';
   }
 
   function renderMain(opts) {
@@ -170,7 +170,7 @@
     const p = E.selectedPlace(), m = p && S.models[p.id];
     renderTitle();
     if (!p || p.lat == null) { main.innerHTML = welcomeHTML(); bindWelcome(); shown = { id: null, temp: null }; return; }
-    if (!m) { main.innerHTML = `<div class="hint" style="margin-top:80px">${R.offline ? 'No connection. Nimbus will load as soon as you are back online.' : 'Loading the forecast...'}</div>`; shown = { id: null, temp: null }; return; }
+    if (!m) { main.innerHTML = `<div class="hint" style="margin-top:80px">${R.offline ? 'No connection. Weather will load as soon as you are back online.' : 'Loading the forecast...'}</div>`; shown = { id: null, temp: null }; return; }
     const fresh = opts.resetScroll || shown.id !== p.id;   // first time this place is drawn: start at the top
     const keepScroll = scroll.scrollTop, keepHours = ($('#hours') || {}).scrollLeft || 0;
     main.innerHTML = mainHTML(p, m);
@@ -293,7 +293,7 @@
     const u = R.update || { state: 'idle' }, cur = u.current || '1.0.0', b = r.querySelector('button'), sub = r.querySelector('.sub'), ttl = r.querySelector('.ttl'), bar = r.querySelector('.upd-bar i');
     const busy = u.state === 'checking' || u.state === 'downloading' || u.state === 'installing';
     ttl.textContent = u.state === 'available' ? `Version ${u.version} is ready` : u.state === 'downloading' ? 'Downloading the update' : u.state === 'installing' ? 'Installing' : 'Updates';
-    sub.textContent = ({ idle: `You have version ${cur}.`, checking: 'Looking for a newer version...', uptodate: `You have the newest version (${cur}).`, none: 'No public release yet, so there is nothing newer to get.', available: `You have ${cur}. The update is checked before it is installed.`, downloading: `${u.pct || 0}%. Nimbus restarts by itself when it is done.`, installing: 'Swapping in the new version...', failed: u.msg || 'The update did not work.' })[u.state] || '';
+    sub.textContent = ({ idle: `You have version ${cur}.`, checking: 'Looking for a newer version...', uptodate: `You have the newest version (${cur}).`, none: 'No public release yet, so there is nothing newer to get.', available: `You have ${cur}. The update is checked before it is installed.`, downloading: `${u.pct || 0}%. Weather restarts by itself when it is done.`, installing: 'Swapping in the new version...', failed: u.msg || 'The update did not work.' })[u.state] || '';
     b.textContent = u.state === 'available' ? 'Update now' : busy ? '...' : 'Check for updates';
     b.disabled = busy;
     b.onclick = () => (u.state === 'available' ? E.updInstall() : E.updCheck());
@@ -312,7 +312,7 @@
     const sh = sheets[name];
     if (name === 'settings') {
       const s = S.settings; kbI = -1;
-      sh.innerHTML = sheetHead('Settings') + '<div class="scroll"><div id="set-body"></div></div><div class="ftr">Nimbus · Data from Open-Meteo</div>';
+      sh.innerHTML = sheetHead('Settings') + '<div class="scroll"><div id="set-body"></div></div><div class="ftr">Weather · Data from Open-Meteo</div>';
       const body = $('#set-body', sh);
       body.append(
         setRow('moon', 'Appearance', 'Light, dark or Auto', seg([['light', 'Light'], ['auto', 'Auto'], ['dark', 'Dark']], s.theme, (v) => { E.setSettings({ theme: v }); applyTheme(); })),
@@ -323,8 +323,8 @@
         setRow('bell', 'Rain alerts', 'Tell me before it rains', switchEl(!!s.rain, (v) => E.setSettings({ rain: v }), 'Rain alerts')),
         setRow('pin', 'Places', S.places.length + (S.places.length === 1 ? ' place saved' : ' places saved'), (() => { const b = document.createElement('button'); b.className = 'btn soft'; b.style.height = '30px'; b.style.padding = '0 12px'; b.textContent = 'Edit'; b.onclick = () => openSheet('places'); return b; })()),
         updateRow(),
-        setRow('login', 'Open at login', 'Start Nimbus when you sign in', switchEl(!!s.login, (v) => E.setSettings({ login: v }), 'Open at login')),
-        setRow('power', 'Quit Nimbus', 'Close it completely', (() => { const b = document.createElement('button'); b.className = 'btn soft'; b.style.height = '30px'; b.style.padding = '0 12px'; b.textContent = 'Quit'; b.onclick = () => E.quit(); return b; })(), 'mute'));
+        setRow('login', 'Open at login', 'Start Weather when you sign in', switchEl(!!s.login, (v) => E.setSettings({ login: v }), 'Open at login')),
+        setRow('power', 'Quit Weather', 'Close it completely', (() => { const b = document.createElement('button'); b.className = 'btn soft'; b.style.height = '30px'; b.style.padding = '0 12px'; b.textContent = 'Quit'; b.onclick = () => E.quit(); return b; })(), 'mute'));
     } else {
       sh.innerHTML = sheetHead('Places') + `<div class="scroll"><label class="search"><svg viewBox="0 0 24 24">${IC.search.slice(IC.search.indexOf('>') + 1, -6)}</svg><input id="q" placeholder="Search for a city" autocomplete="off" spellcheck="false"></label><div id="res"></div><div id="plist"></div></div>`;
       renderPlaces();
@@ -378,7 +378,7 @@
     const s = S.settings;
     const hasHere = S.places.some((p) => p.current);
     let html = '';
-    if (!hasHere && E.R.hostInfo.canLocate) html += `<button class="card row" id="p-here" style="margin-top:10px"><div class="tile">${IC.arrow}</div><div class="grow"><div class="ttl">${R.loc === 'waiting' ? 'Finding you...' : 'Use my location'}</div><div class="sub">${R.loc === 'denied' ? 'Location is off for Nimbus. Turn it on in System Settings.' : R.loc === 'failed' ? 'Could not find you. Tap to try again.' : 'Show the weather where you are'}</div></div></button>`;
+    if (!hasHere && E.R.hostInfo.canLocate) html += `<button class="card row" id="p-here" style="margin-top:10px"><div class="tile">${IC.arrow}</div><div class="grow"><div class="ttl">${R.loc === 'waiting' ? 'Finding you...' : 'Use my location'}</div><div class="sub">${R.loc === 'denied' ? 'Location is off for Weather. Turn it on in System Settings.' : R.loc === 'failed' ? 'Could not find you. Tap to try again.' : 'Show the weather where you are'}</div></div></button>`;
     html += '<div class="section-label">Saved places</div><div class="card group">';
     if (!S.places.length) html += '<div class="hint">Nothing saved yet. Search for a city above.</div>';
     S.places.forEach((p) => {
@@ -387,7 +387,7 @@
     });
     html += '</div>';
     if (S.places.some((p) => !p.current)) html += '<div class="hint">Swipe a place to the left to remove it.</div>';
-    if (R.loc === 'denied' && !hasHere) html += '<div class="hint warn">Location is switched off. Open System Settings, Privacy and Security, Location Services, and turn it on for Nimbus.</div>';
+    if (R.loc === 'denied' && !hasHere) html += '<div class="hint warn">Location is switched off. Open System Settings, Privacy and Security, Location Services, and turn it on for Weather.</div>';
     list.innerHTML = html;
     list.querySelectorAll('[data-sel]').forEach((b) => b.onclick = () => { E.select(b.dataset.sel); closeSheet(); });
     bindSwipe(list);
