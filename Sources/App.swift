@@ -342,6 +342,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         updateRim()
     }
 
+    /// Springs the panel out of (or back into) the arrow tip, like the other menu bar apps.
+    private func springPanel(opening: Bool) {
+        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+        let w = panelSize.width, h = panelSize.height
+        let s0: CGFloat = opening ? 0.86 : 0.95
+        var small = CATransform3DMakeTranslation((arrowX - w / 2) * (1 - s0), (h / 2) * (1 - s0), 0)
+        small = CATransform3DScale(small, s0, s0, 1)
+        let spring = CASpringAnimation(keyPath: "transform")
+        if opening {
+            spring.fromValue = small
+            spring.toValue = CATransform3DIdentity
+            spring.mass = 1; spring.stiffness = 340; spring.damping = 19
+            spring.duration = spring.settlingDuration
+        } else {
+            spring.fromValue = CATransform3DIdentity
+            spring.toValue = small
+            spring.duration = 0.14
+            spring.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            spring.isRemovedOnCompletion = true
+        }
+        for layer in [container.layer, rimView.layer] { layer?.add(spring, forKey: "spring") }
+    }
+
     private func updateRim() {
         let dark = (panel.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
         rimView?.rim.strokeColor = NSColor.white.withAlphaComponent(dark ? 0.16 : 0.5).cgColor
@@ -358,18 +381,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         shown = true
         bounceIcon()
         button.highlight(true)
-        let slide = !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         panel.alphaValue = 0
-        panel.setFrame(finalFrame.offsetBy(dx: 0, dy: slide ? 8 : 0), display: true)
+        panel.setFrame(finalFrame, display: true)
         panel.orderFrontRegardless()
         panel.makeKey()
         panel.makeFirstResponder(webView)
         NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = slide ? 0.26 : 0.12
-            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.16, 1, 0.3, 1)
+            ctx.duration = 0.14
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
             panel.animator().alphaValue = 1
-            if slide { panel.animator().setFrame(finalFrame, display: true) }
         }
+        springPanel(opening: true)
         panel.invalidateShadow()
         js("wx.opened()")
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
@@ -391,8 +413,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         if let m = clickMonitor { NSEvent.removeMonitor(m); clickMonitor = nil }
         if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
         js("wx.closed()")
+        springPanel(opening: false)
         NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.12
+            ctx.duration = 0.14
             panel.animator().alphaValue = 0
         }, completionHandler: { [weak self] in
             MainActor.assumeIsolated {
@@ -506,6 +529,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         case "panel": openPopover()
         case "close": closePopover()
         case "toggle": statusClicked()
+        case "sample":
+            // Opens the panel and logs the panel's scale and opacity every 25 ms, to prove the spring-in.
+            closePopover()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                MainActor.assumeIsolated {
+                    self.openPopover()
+                    var out: [String] = []
+                    for i in 0..<24 {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.025 * Double(i)) {
+                            MainActor.assumeIsolated {
+                                let t = self.container.layer?.presentation()?.transform.m11 ?? -1
+                                out.append(String(format: "%.3f/%.2f", t, self.panel.alphaValue))
+                                if i == 23 { self.log("spring m11/alpha: " + out.joined(separator: " ")) }
+                            }
+                        }
+                    }
+                }
+            }
         case "wake": js("wx.wake()")
         case "tick": js("wx.tick()")
         case "bar": log("bar kind=\(barKind) text=\(barText) style=\(barStyle) title=\(statusItem.button?.title ?? "") hasImage=\(statusItem.button?.image != nil)")
