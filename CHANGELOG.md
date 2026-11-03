@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.4 (3 Nov 2026)
+- The arrow on top of the panel is now the same soft bell shape as the other menu bar apps: wider, flatter, rounded tip, sides that curve out into the panel.
+- New Settings switch: Show in Dock. Off by default; the menu bar icon always stays, so Weather is reachable either way.
+
 ## 1.1.3 (3 Nov 2026)
 - Night sky: one faded moon in the corner. No more stars, white dots or white blurs.
 

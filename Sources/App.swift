@@ -173,6 +173,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         #if NIMBUS_TEST
         DistributedNotificationCenter.default().addObserver(self, selector: #selector(testCommand(_:)), name: .init("com.solomon.Weather.test"), object: nil)
         #endif
+        applyStoredDock()
         log("launched")
     }
 
@@ -239,6 +240,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             requestLocation()
         case "login":
             setLogin(body["on"] as? Bool ?? false)
+        case "dock":
+            applyDock(body["on"] as? Bool ?? false)
         case "notifyPermission":
             askNotifyPermission()
         case "notify":
@@ -393,15 +396,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         p.addArc(tangent1End: CGPoint(x: size.width, y: 0), tangent2End: CGPoint(x: size.width, y: r), radius: r)
         p.addLine(to: CGPoint(x: size.width, y: top - r))
         p.addArc(tangent1End: CGPoint(x: size.width, y: top), tangent2End: CGPoint(x: size.width - r, y: top), radius: r)
-        // Same silhouette as the system popover arrow the other menu bar apps use: about 28 pt wide, 10.7 pt tall,
-        // straight sides at about 45 degrees, soft fillets into the body and a rounded tip about 8 pt wide.
+        // Soft bell like the system popover arrow (Nox/Awayke): about 28 pt wide, 10.7 pt tall, sides flare out of the body
+        // in one smooth curve (no straight edge), narrow rounded tip.
         let h = arrowTip
         p.addLine(to: CGPoint(x: ax + 14, y: top))
-        p.addCurve(to: CGPoint(x: ax + 9.6, y: top + 2.0), control1: CGPoint(x: ax + 11.8, y: top), control2: CGPoint(x: ax + 10.6, y: top + 0.8))
-        p.addLine(to: CGPoint(x: ax + 3.9, y: top + h - 1.8))
-        p.addCurve(to: CGPoint(x: ax - 3.9, y: top + h - 1.8), control1: CGPoint(x: ax + 2.2, y: top + h + 0.8), control2: CGPoint(x: ax - 2.2, y: top + h + 0.8))
-        p.addLine(to: CGPoint(x: ax - 9.6, y: top + 2.0))
-        p.addCurve(to: CGPoint(x: ax - 14, y: top), control1: CGPoint(x: ax - 10.6, y: top + 0.8), control2: CGPoint(x: ax - 11.8, y: top))
+        p.addCurve(to: CGPoint(x: ax + 2.3, y: top + h - 0.6), control1: CGPoint(x: ax + 8.8, y: top), control2: CGPoint(x: ax + 5.6, y: top + h - 3.6))
+        p.addCurve(to: CGPoint(x: ax - 2.3, y: top + h - 0.6), control1: CGPoint(x: ax + 1.2, y: top + h + 0.1), control2: CGPoint(x: ax - 1.2, y: top + h + 0.1))
+        p.addCurve(to: CGPoint(x: ax - 14, y: top), control1: CGPoint(x: ax - 5.6, y: top + h - 3.6), control2: CGPoint(x: ax - 8.8, y: top))
         p.addLine(to: CGPoint(x: r, y: top))
         p.addArc(tangent1End: CGPoint(x: 0, y: top), tangent2End: CGPoint(x: 0, y: top - r), radius: r)
         p.addLine(to: CGPoint(x: 0, y: r))
@@ -566,6 +567,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
     // MARK: - Open at login
 
+    /// Dock icon on or off. The menu bar icon always stays, so the app is reachable either way.
+    private func applyDock(_ on: Bool) {
+        NSApp.setActivationPolicy(on ? .regular : .accessory)
+        log("dock \(on ? "shown" : "hidden")")
+    }
+
+    private func applyStoredDock() {
+        guard let data = try? Data(contentsOf: Self.stateURL),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let settings = json["settings"] as? [String: Any], settings["dock"] as? Bool == true else { return }
+        applyDock(true)
+    }
+
     private func setLogin(_ on: Bool) {
         do { if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() } }
         catch { log("login change failed: \(error.localizedDescription)") }
@@ -643,6 +657,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         switch command {
         case "panel": openPopover()
         case "close": closePopover()
+        case "offscreen":
+            // Opens the panel far outside every screen, so a window capture can be taken without showing anything.
+            openPopover()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { MainActor.assumeIsolated { self.panel.setFrameOrigin(NSPoint(x: -9000, y: 400)) } }
         case "toggle": statusClicked()
         case "sample":
             // Opens the panel and logs the panel's scale and opacity every 25 ms, to prove the spring-in.

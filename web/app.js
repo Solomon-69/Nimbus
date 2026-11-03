@@ -23,6 +23,7 @@
     moon: '<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>',
     temp: '<svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg>',
     bar: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2"/><path d="M7 7h2M13 7h4"/></svg>',
+    dock: '<svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M7.5 16.2h9"/></svg>',
     power: '<svg viewBox="0 0 24 24"><path d="M12 3v8M6.3 6.8a8 8 0 1 0 11.4 0"/></svg>',
     refresh: '<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5M20 20v-4h-4"/></svg>',
     bell: '<svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9zM10 20a2 2 0 0 0 4 0"/></svg>',
@@ -324,6 +325,7 @@
         setRow('pin', 'Places', S.places.length + (S.places.length === 1 ? ' place saved' : ' places saved'), (() => { const b = document.createElement('button'); b.className = 'btn soft'; b.style.height = '30px'; b.style.padding = '0 12px'; b.textContent = 'Edit'; b.onclick = () => openSheet('places'); return b; })()),
         updateRow(),
         setRow('login', 'Open at login', 'Start Weather when you sign in', switchEl(!!s.login, (v) => E.setSettings({ login: v }), 'Open at login')),
+        setRow('dock', 'Show in Dock', 'Also keep a Weather icon in the Dock', switchEl(!!s.dock, (v) => E.setSettings({ dock: v }), 'Show in Dock')),
         setRow('power', 'Quit Weather', 'Close it completely', (() => { const b = document.createElement('button'); b.className = 'btn soft'; b.style.height = '30px'; b.style.padding = '0 12px'; b.textContent = 'Quit'; b.onclick = () => E.quit(); return b; })(), 'mute'));
     } else {
       sh.innerHTML = sheetHead('Places') + `<div class="scroll"><label class="search"><svg viewBox="0 0 24 24">${IC.search.slice(IC.search.indexOf('>') + 1, -6)}</svg><input id="q" placeholder="Search for a city" autocomplete="off" spellcheck="false"></label><div id="res"></div><div id="plist"></div></div>`;

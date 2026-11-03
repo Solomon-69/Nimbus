@@ -10,7 +10,7 @@
     return { kind: 'web', post: () => {} };
   })();
 
-  const defaults = () => ({ settings: { theme: 'auto', unit: 'c', speed: 'kmh', bar: 'both', login: false, sky: 'blue', rain: true, autoUnits: true }, places: [], selected: null, models: {}, seenWelcome: false, alerted: {} });
+  const defaults = () => ({ settings: { theme: 'auto', unit: 'c', speed: 'kmh', bar: 'both', login: false, sky: 'blue', rain: true, autoUnits: true, dock: false }, places: [], selected: null, models: {}, seenWelcome: false, alerted: {} });
   function load() {
     let raw = window.__WX_STORE__;
     if (!raw) { try { raw = localStorage.getItem(KEY); } catch (e) { raw = null; } }
@@ -118,6 +118,7 @@
       if ('unit' in patch || 'speed' in patch) patch = Object.assign({ autoUnits: false }, patch);
       Object.assign(S.settings, patch); save(); pushBar(); emit('settings');
       if ('login' in patch) host.post({ a: 'login', on: !!patch.login });
+      if ('dock' in patch) host.post({ a: 'dock', on: !!patch.dock });
       if (patch.rain) host.post({ a: 'notifyPermission' });
     },
     select(id) { if (S.places.some((p) => p.id === id) && S.selected !== id) { S.selected = id; save(); emit('select'); const m = S.models[id]; if (!m || Date.now() - m.updated > 5 * 60e3) refresh('select'); } },
