@@ -250,7 +250,6 @@ button.row:active { transform: scale(0.985); }
 .list-icon .wx, .hr .wx, .day .wx { animation: none; }
 .hr .wx *, .day .wx * { animation: none !important; }
 
-/* entrance: replays every time the panel opens */
 .enter [data-i] { animation: rise 0.55s var(--spring) backwards; animation-delay: calc(var(--i, 0) * 45ms); }
 @keyframes rise { from { opacity: 0; transform: translateY(14px) scale(0.985); } }
 .enter .hr { animation: rise 0.5s var(--spring) backwards; animation-delay: calc(120ms + var(--k, 0) * 28ms); }

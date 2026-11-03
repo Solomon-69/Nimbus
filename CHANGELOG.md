@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.6 (3 Nov 2026)
+- The panel now grows out of the menu bar icon (it grew from the left side before) and keeps the arrow tip pinned under the icon the whole time.
+- No dark empty box while it opens or closes, and the weather cards are there from the first frame instead of fading in late.
+
 ## 1.0.5 (3 Nov 2026)
 - The arrow now has the same shape as the other menu bar apps (system popover silhouette: wider, lower, straight sides, rounded tip).
 - Opening no longer flashes a dark blank panel or an old picture when the Mac is busy: the panel fades in from fully transparent while it pops out of the arrow.

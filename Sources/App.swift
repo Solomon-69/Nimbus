@@ -55,6 +55,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     private var panel: GlassPanel!
     private var container: NSView!
     private var rimView: RimView!
+    private var glass: NSVisualEffectView!
+    private var fill: NSView!
     private var shown = false
     private var openCount = 0
     private var arrowX: CGFloat = 190
@@ -333,7 +335,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         container = NSView(frame: root.bounds)
         container.wantsLayer = true
         root.addSubview(container)
-        let glass = NSVisualEffectView(frame: container.bounds)
+        // The frosted blur is composited by the window server at the window's full size, so it would not follow the
+        // pop animation (it showed as a dark flat rectangle). While the panel moves, a plain tinted layer inside the
+        // container stands in for it and scales with the content; the blur takes over once the panel has settled.
+        fill = NSView(frame: container.bounds)
+        fill.wantsLayer = true
+        fill.autoresizingMask = [.width, .height]
+        container.addSubview(fill)
+        glass = NSVisualEffectView(frame: container.bounds)
         glass.material = .popover
         glass.blendingMode = .behindWindow
         glass.state = .active
@@ -388,22 +397,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         // Curve measured from the system popover (the one Ludus uses): grows out of the arrow tip from about 0.58,
         // overshoots a little, settles in about half a second; closing shrinks to about 0.45 while fading.
         let s0: CGFloat = opening ? 0.58 : 0.45
-        var small = CATransform3DMakeTranslation((arrowX - w / 2) * (1 - s0), (h / 2) * (1 - s0), 0)
-        small = CATransform3DScale(small, s0, s0, 1)
-        let spring = CASpringAnimation(keyPath: "transform")
-        if opening {
-            spring.fromValue = small
-            spring.toValue = CATransform3DIdentity
-            spring.mass = 1; spring.stiffness = 530; spring.damping = 35
-            spring.duration = spring.settlingDuration
-        } else {
-            spring.fromValue = CATransform3DIdentity
-            spring.toValue = small
-            spring.duration = 0.16
-            spring.timingFunction = CAMediaTimingFunction(name: .easeIn)
-            spring.isRemovedOnCompletion = true
+        for layer in [container.layer, rimView.layer].compactMap({ $0 }) {
+            // Keep the arrow tip fixed. AppKit layers usually anchor at the bottom-left corner, not the centre, so the
+            // offset is worked out from the layer's real anchor point (otherwise the panel grows out of its left side).
+            let ax = layer.anchorPoint.x * w, ay = layer.anchorPoint.y * h
+            let tipY = layer.isGeometryFlipped ? 0 : h
+            var small = CATransform3DMakeTranslation((arrowX - ax) * (1 - s0), (tipY - ay) * (1 - s0), 0)
+            small = CATransform3DScale(small, s0, s0, 1)
+            let spring = CASpringAnimation(keyPath: "transform")
+            if opening {
+                spring.fromValue = small
+                spring.toValue = CATransform3DIdentity
+                spring.mass = 1; spring.stiffness = 530; spring.damping = 35
+                spring.duration = spring.settlingDuration
+            } else {
+                spring.fromValue = CATransform3DIdentity
+                spring.toValue = small
+                spring.duration = 0.16
+                spring.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                spring.fillMode = .forwards
+                spring.isRemovedOnCompletion = false
+            }
+            layer.add(spring, forKey: "spring")
         }
-        for layer in [container.layer, rimView.layer] { layer?.add(spring, forKey: "spring") }
+    }
+
+    /// true: blur hidden, tinted stand-in visible (while the panel moves). false: the real frosted glass.
+    private func standIn(_ on: Bool) {
+        let dark = (panel.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
+        fill.layer?.backgroundColor = (dark ? NSColor(srgbRed: 0.13, green: 0.14, blue: 0.17, alpha: 0.96)
+                                            : NSColor(srgbRed: 0.93, green: 0.95, blue: 0.97, alpha: 0.96)).cgColor
+        if on {
+            fill.alphaValue = 1; fill.isHidden = false
+            glass.isHidden = true
+        } else {
+            glass.isHidden = false
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.18
+                fill.animator().alphaValue = 0
+            }, completionHandler: { [weak self] in
+                MainActor.assumeIsolated { if let self, !self.glass.isHidden { self.fill.isHidden = true } }
+            })
+        }
     }
 
     private func updateRim() {
@@ -430,8 +465,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         panel.makeKey()
         panel.makeFirstResponder(webView)
         webView.alphaValue = 1
+        standIn(true)
         js("wx.opened()")
         springPanel(opening: true)
+        openCount += 1
+        let thisOpen = openCount
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+            guard let self, self.shown, self.openCount == thisOpen else { return }
+            self.standIn(false)
+        }
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.16
             ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
@@ -465,6 +507,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         if let m = clickMonitor { NSEvent.removeMonitor(m); clickMonitor = nil }
         if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
         js("wx.closed()")
+        standIn(true)
         springPanel(opening: false)
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.16
@@ -578,8 +621,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
                     for i in 0..<24 {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.025 * Double(i)) {
                             MainActor.assumeIsolated {
-                                let t = self.container.layer?.presentation()?.transform.m11 ?? -1
-                                out.append(String(format: "%.3f/%.2f", t, self.panel.alphaValue))
+                                let pt = self.container.layer?.presentation()?.transform ?? CATransform3DIdentity, a = self.container.layer?.anchorPoint ?? .zero
+                                // where the arrow tip is drawn right now (layer coords): should stay at (arrowX, height) the whole time
+                                let tx = a.x * panelSize.width + pt.m41 + pt.m11 * (self.arrowX - a.x * panelSize.width), ty = a.y * panelSize.height + pt.m42 + pt.m22 * (panelSize.height - a.y * panelSize.height)
+                                out.append(String(format: "%.3f tip=(%.1f,%.1f)", pt.m11, tx, ty))
                                 if i == 23 { self.log("spring m11/alpha: " + out.joined(separator: " ")) }
                             }
                         }

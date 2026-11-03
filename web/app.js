@@ -415,7 +415,6 @@
   });
 
   applyTheme(); applySky(); renderMain(); renderFooter();
-  main.classList.add('enter');
   /* Esc from the native shell: close a sheet first; tell the shell if nothing was open. */
   const escape = () => { if (openName) { closeSheet(); return true; } return false; };
   window.WxUI = { openSheet, closeSheet, renderMain, replayEnter, escape, applySky, state: () => ({ sheet: openName }) };
