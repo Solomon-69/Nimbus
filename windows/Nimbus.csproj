@@ -17,7 +17,7 @@
     <Description>Weather in your tray</Description>
     <Company>Solomon</Company>
     <Copyright>Copyright (c) 2026 Solomon</Copyright>
-    <Version>0.2.0</Version>
+    <Version>1.0.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
 
     <EnableWindowsTargeting>true</EnableWindowsTargeting>

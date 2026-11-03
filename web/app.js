@@ -263,7 +263,7 @@
     const sh = sheets[name];
     if (name === 'settings') {
       const s = S.settings;
-      sh.innerHTML = sheetHead('Settings') + '<div class="scroll"><div id="set-body"></div></div><div class="ftr">Nimbus 0.2 · Data from Open-Meteo</div>';
+      sh.innerHTML = sheetHead('Settings') + '<div class="scroll"><div id="set-body"></div></div><div class="ftr">Nimbus 1.0 · Data from Open-Meteo</div>';
       const body = $('#set-body', sh);
       body.append(
         setRow('moon', 'Appearance', 'Light, dark or Auto', seg([['light', 'Light'], ['auto', 'Auto'], ['dark', 'Dark']], s.theme, (v) => { E.setSettings({ theme: v }); applyTheme(); })),
