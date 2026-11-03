@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.5 (4 Nov 2026)
+- The sky behind the panel is soft now: the night moon is a faded, softly glowing disc with no hard edge, and the sun, clouds, rain and snow are blurred a little so they sit behind the cards like a blurred background. Text and cards stay sharp.
+
 ## 1.1.4 (3 Nov 2026)
 - The arrow on top of the panel is now the same soft bell shape as the other menu bar apps: wider, flatter, rounded tip, sides that curve out into the panel.
 - New Settings switch: Show in Dock. Off by default; the menu bar icon always stays, so Weather is reachable either way.

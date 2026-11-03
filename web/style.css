@@ -85,18 +85,19 @@ body.kbd button:focus-visible, body.kbd .row:focus-visible, input:focus-visible 
 .sky .layer.on { opacity: 1; }
 .sky .scene { position: absolute; inset: 0; }
 .sky .scene * { position: absolute; will-change: transform; }
-.sun-glow { right: -40px; top: -60px; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 244, 214, 0.85) 0%, rgba(255, 233, 170, 0.35) 38%, transparent 68%); animation: glow 7s ease-in-out infinite alternate; }
+.sun-glow { right: -40px; top: -60px; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 244, 214, 0.85) 0%, rgba(255, 233, 170, 0.35) 38%, transparent 68%); filter: blur(10px); animation: glow 7s ease-in-out infinite alternate; }
 @keyframes glow { to { transform: scale(1.08); opacity: 0.82; } }
-.cl { border-radius: 50%; background: rgba(255, 255, 255, 0.5); filter: blur(14px); animation: cloudmove linear infinite; }
-.cl.d { background: rgba(70, 82, 98, 0.32); }
+.cl { border-radius: 50%; background: rgba(255, 255, 255, 0.46); filter: blur(20px); animation: cloudmove linear infinite; }
+.cl.d { background: rgba(70, 82, 98, 0.28); }
 @keyframes cloudmove { from { transform: translateX(-160px); } to { transform: translateX(520px); } }
-.rd { width: 1.5px; height: 16px; border-radius: 1px; background: linear-gradient(transparent, rgba(220, 235, 255, 0.75)); animation: rainfall linear infinite; }
+.rd { width: 1.5px; height: 16px; border-radius: 1px; background: linear-gradient(transparent, rgba(220, 235, 255, 0.6)); filter: blur(0.9px); animation: rainfall linear infinite; }
 @keyframes rainfall { from { transform: translateY(-30px); opacity: 0; } 15% { opacity: 1; } to { transform: translateY(270px); opacity: 0.2; } }
-.sf { width: 4px; height: 4px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); animation: snowfall linear infinite; }
+.sf { width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 255, 255, 0.7); filter: blur(1.3px); animation: snowfall linear infinite; }
 @keyframes snowfall { from { transform: translate(0, -10px); opacity: 0; } 15% { opacity: 1; } to { transform: translate(18px, 270px); opacity: 0.3; } }
-.star { width: 2px; height: 2px; border-radius: 50%; background: #fff; animation: twinkle ease-in-out infinite alternate; }
+.star { width: 2px; height: 2px; border-radius: 50%; background: #fff; filter: blur(1px); animation: twinkle ease-in-out infinite alternate; }
 @keyframes twinkle { from { opacity: 0.2; } to { opacity: 0.95; } }
-.moon { right: 30px; top: 22px; width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle at 38% 36%, rgba(255, 248, 228, 0.5) 0%, rgba(226, 222, 204, 0.3) 60%, rgba(226, 222, 204, 0) 72%); box-shadow: 0 0 26px rgba(255, 246, 214, 0.10); }
+.moon { right: 22px; top: 12px; width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle closest-side at 44% 42%, rgba(255, 250, 232, 0.34) 0%, rgba(240, 236, 214, 0.26) 45%, rgba(240, 236, 214, 0.08) 80%, rgba(240, 236, 214, 0) 100%); box-shadow: 0 0 40px 10px rgba(255, 246, 214, 0.08); filter: blur(7px); animation: moonbreathe 9s ease-in-out infinite alternate; }
+@keyframes moonbreathe { to { opacity: 0.8; } }
 .flash { inset: 0; background: rgba(255, 255, 255, 0.55); opacity: 0; animation: flashy 7s ease-in-out infinite; }
 @keyframes flashy { 0%, 90%, 100% { opacity: 0; } 92% { opacity: 0.8; } 95% { opacity: 0.1; } 97% { opacity: 0.6; } }
 #app > .hdr, #app > .scroll, #app > .ftr { position: relative; z-index: 1; }
