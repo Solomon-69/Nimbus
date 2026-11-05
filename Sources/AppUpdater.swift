@@ -16,7 +16,7 @@ struct UpdateConfig {
 }
 
 enum UpdateFiles {
-    struct Failure: Error { let why: String }
+    typealias Failure = UpdateFailure
 
     /// Hosts a release download may come from. Tests add 127.0.0.1.
     static let hosts: Set<String> = ["github.com", "api.github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com"]
@@ -74,32 +74,31 @@ enum UpdateFiles {
         let (sumData, sumResp) = try await s.data(from: sums)
         guard (sumResp as? HTTPURLResponse)?.statusCode == 200, let text = String(data: sumData, encoding: .utf8),
               let want = expectedHash(in: text, for: cfg.zipName) else { throw Failure(why: "no checksum") }
+        // 0 to 90 is the real download, by bytes. The rest are the steps after it, so 100 only shows when it is really finished.
         let file = work.appendingPathComponent(cfg.zipName)
-        fm.createFile(atPath: file.path, contents: nil)
-        let out = try FileHandle(forWritingTo: file)
-        var hasher = SHA256()
-        progress(1)
-        let (bytes, resp) = try await s.bytes(from: zip)
-        guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw Failure(why: "download failed") }
-        let total = Double(resp.expectedContentLength)
-        var buf = Data(); var got = 0.0; var last = -1.0
-        for try await b in bytes {
-            buf.append(b)
-            if buf.count >= 65536 {
-                hasher.update(data: buf); try out.write(contentsOf: buf); got += Double(buf.count); buf.removeAll(keepingCapacity: true)
-                let p = total > 0 ? min(99, max(1, (got / total * 100).rounded())) : min(95, 1 + (got / 1_000_000).rounded())
-                if p != last { last = p; progress(p) }
-            }
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+        let agent = "\(cfg.appName)/\(v) (Mac)"
+        do {
+            try await FileDownload.get(zip, to: file, userAgent: agent) { got, total in if total > 0 { progress(Double(got) / Double(total) * 90) } }
+        } catch {
+            progress(0)   // one quiet retry: a dropped connection should not end the update
+            try await FileDownload.get(zip, to: file, userAgent: agent) { got, total in if total > 0 { progress(Double(got) / Double(total) * 90) } }
         }
-        if !buf.isEmpty { hasher.update(data: buf); try out.write(contentsOf: buf) }
-        try out.close()
-        guard hasher.finalize().map({ String(format: "%02x", $0) }).joined() == want else { throw Failure(why: "checksum mismatch") }
-        progress(100)
+        progress(92)
+        guard try FileDownload.sha256(of: file) == want else { throw UpdateFailure(why: "checksum mismatch") }
+        progress(96)
         let unzipped = work.appendingPathComponent("x", isDirectory: true)
         try run("/usr/bin/ditto", ["-x", "-k", file.path, unzipped.path])
         let newApp = unzipped.appendingPathComponent(cfg.bundleName)
         guard fm.fileExists(atPath: newApp.appendingPathComponent("Contents/MacOS").path) else { throw Failure(why: "not a \(cfg.appName) app") }
+        progress(98)
         return newApp
+    }
+
+    /// False when this copy can't be replaced: opened from a disk image, or from Downloads before macOS has moved it.
+    static func replaceable(_ bundle: URL) -> Bool {
+        let p = bundle.path
+        return !p.contains("/AppTranslocation/") && !p.hasPrefix("/Volumes/") && FileManager.default.isWritableFile(atPath: bundle.deletingLastPathComponent().path)
     }
 
     /// Swap the running app's bundle for the new one (after the same bundle id is confirmed).
@@ -118,6 +117,57 @@ enum UpdateFiles {
         p.standardOutput = nil; p.standardError = nil
         try? p.run()
     }
+}
+
+/// Downloads to a file with real byte counts. A connection that stops sending fails within 20 s instead of sitting still.
+final class FileDownload: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+    private let dest: URL
+    private let progress: @Sendable (Int64, Int64) -> Void
+    private var done: CheckedContinuation<Void, Error>?
+    private var failure: Error?
+
+    private init(dest: URL, progress: @escaping @Sendable (Int64, Int64) -> Void) { self.dest = dest; self.progress = progress }
+
+    static func get(_ url: URL, to dest: URL, userAgent: String, progress: @escaping @Sendable (Int64, Int64) -> Void) async throws {
+        let c = URLSessionConfiguration.ephemeral
+        c.timeoutIntervalForRequest = 20; c.timeoutIntervalForResource = 900
+        c.httpAdditionalHeaders = ["User-Agent": userAgent]
+        let job = FileDownload(dest: dest, progress: progress)
+        let s = URLSession(configuration: c, delegate: job, delegateQueue: nil)
+        defer { s.finishTasksAndInvalidate() }
+        try await withCheckedThrowingContinuation { (k: CheckedContinuation<Void, Error>) in
+            job.done = k
+            s.downloadTask(with: url).resume()
+        }
+    }
+    func urlSession(_ s: URLSession, downloadTask: URLSessionDownloadTask, didWriteData b: Int64, totalBytesWritten got: Int64, totalBytesExpectedToWrite total: Int64) {
+        progress(got, total)
+    }
+    func urlSession(_ s: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo tmp: URL) {
+        guard (downloadTask.response as? HTTPURLResponse)?.statusCode == 200 else { failure = UpdateFailure(why: "download failed"); return }
+        do { try? FileManager.default.removeItem(at: dest); try FileManager.default.moveItem(at: tmp, to: dest) } catch { failure = error }
+    }
+    func urlSession(_ s: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        if let e = error ?? failure { done?.resume(throwing: e) } else { done?.resume() }
+        done = nil
+    }
+    static func sha256(of file: URL) throws -> String {
+        let h = try FileHandle(forReadingFrom: file); defer { try? h.close() }
+        var hasher = SHA256()
+        while let chunk = try h.read(upToCount: 1 << 20), !chunk.isEmpty { hasher.update(data: chunk) }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+}
+struct UpdateFailure: Error { let why: String }
+
+/// What went wrong, in words a person can act on.
+func updateProblem(_ e: Error, app: String) -> String {
+    let why = (e as? UpdateFailure)?.why ?? ""
+    if why == "checksum mismatch" { return "The download was damaged, so it was thrown away. Try again." }
+    if why == "not writable" { return "\(app) can't replace itself where it is. Move it to the Applications folder, then try again." }
+    if e is URLError || why == "download failed" || why == "no checksum" { return "The download stopped. Check your internet and try again." }
+    if let c = (e as NSError?), c.domain == NSCocoaErrorDomain { return "\(app) can't replace itself where it is. Move it to the Applications folder, then try again." }
+    return "The update did not install, your current version is untouched."
 }
 
 @MainActor final class AppUpdater: ObservableObject {
@@ -167,11 +217,12 @@ enum UpdateFiles {
 
     func install() async {
         guard case .available = state, let f = found else { return }
-        state = .downloading(1)
+        state = .downloading(0)
         let work = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("\(cfg.appName.lowercased())-update-\(UUID().uuidString)", isDirectory: true)
         let fm = FileManager.default
         defer { try? fm.removeItem(at: work) }
         do {
+            guard UpdateFiles.replaceable(Bundle.main.bundleURL) else { throw UpdateFailure(why: "not writable") }
             try fm.createDirectory(at: work, withIntermediateDirectories: true)
             let cfg = self.cfg
             let newApp = try await UpdateFiles.stage(cfg: cfg, zip: f.zip, sums: f.sums, work: work) { [weak self] p in
@@ -186,7 +237,8 @@ enum UpdateFiles {
             UpdateFiles.relaunchAfterExit(bundle)
             NSApp.terminate(nil)
         } catch {
-            state = .failed("The update did not install, your current version is untouched.")
+            NSLog("%@ update failed: %@", cfg.appName, "\(error)")
+            state = .failed(updateProblem(error, app: cfg.appName))
         }
     }
 
@@ -241,7 +293,7 @@ struct UpdateRow: View {
                 GeometryReader { g in
                     ZStack(alignment: .leading) {
                         Capsule().fill(track)
-                        Capsule().fill(tint).frame(width: max(6, g.size.width * CGFloat(p / 100)))
+                        Capsule().fill(tint).frame(width: max(6, g.size.width * CGFloat(min(p, 100) / 100)))
                     }
                 }
                 .frame(height: 6)
@@ -253,7 +305,7 @@ struct UpdateRow: View {
     private var title: String {
         switch updater.state {
         case .available(let v): return "Version \(v) is ready"
-        case .downloading: return "Downloading the update"
+        case .downloading(let p): return p <= 90 ? "Downloading the update" : "Almost done"
         case .installing: return "Installing"
         default: return "Updates"
         }
@@ -265,7 +317,7 @@ struct UpdateRow: View {
         case .upToDate: return "You have the newest version (\(updater.currentVersion))."
         case .notPublished: return "No public release yet, so there is nothing newer to get."
         case .available: return "You have \(updater.currentVersion). The update is checked before it is installed."
-        case .downloading(let p): return "\(Int(p))%. \(updater.cfg.appName) restarts by itself when it is done."
+        case .downloading(let p): return p <= 90 ? "\(Int(p / 90 * 100))% downloaded. \(updater.cfg.appName) restarts by itself when it is done." : "Checking the download…"
         case .installing: return "Swapping in the new version…"
         case .failed(let m): return m
         }

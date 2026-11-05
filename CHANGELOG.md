@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.6
+- Updates: the bar now follows the real download, then shows checking and installing, and a failed update says why.
+
 ## 1.1.5 (4 Nov 2026)
 - The sky behind the panel is soft now: the night moon is a faded, softly glowing disc with no hard edge, and the sun, clouds, rain and snow are blurred a little so they sit behind the cards like a blurred background. Text and cards stay sharp.
 
